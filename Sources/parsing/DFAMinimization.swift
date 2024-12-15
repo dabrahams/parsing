@@ -12,17 +12,18 @@ extension DFA {
     }
     let incoming = { incomingEdges[$0, default: [:]] }
     
+    let q = Set(states)
+    let f = q.filter { isAccepting($0) }
     // P := {F, Q \ F}
-    var p: Set<Set<State>> = [
-      Set(states.lazy.filter { isAccepting($0) }),
-      Set(states.lazy.filter { !isAccepting($0) }) ]
+    let nonAcceptingStates = q.subtracting(f)
+    var p: Set<Set<State>> = Set([f, nonAcceptingStates].lazy.filter { !$0.isEmpty })
     // W := {F, Q \ F}
     var w = p
     
     // while (W is not empty) do
     //     choose and remove a set A from W
     while let a = w.popFirst() {
-      
+            
       // for each c in Σ do
       let incomingLabels = Set(a.lazy.flatMap { incoming($0).keys})
       for c in incomingLabels {
@@ -32,23 +33,21 @@ extension DFA {
         // for each set Y in P for which X ∩ Y is nonempty and Y \ X is nonempty do
         for y in p {
           let intersection = x.intersection(y)
-          if !intersection.isEmpty {
-            let difference = y.subtracting(x)
-            if !difference.isEmpty {
-              // replace Y in P by the two sets X ∩ Y and Y \ X
-              p.remove(y)
-              p.formUnion([intersection, difference])
+          if intersection.isEmpty { continue }
+          let difference = y.subtracting(x)
+          if difference.isEmpty { continue }
+          // replace Y in P by the two sets X ∩ Y and Y \ X
+          p.remove(y)
+          p.formUnion([intersection, difference])
 
-              // if Y is in W
-              if w.remove(y) != nil {
-                // replace Y in W by the same two sets
-                w.formUnion([intersection, difference])
-              }
-              else {
-                // if |X ∩ Y| <= |Y \ X| add X ∩ Y to W else add Y \ X to W
-                w.insert(intersection.count <= difference.count ? intersection : difference)
-              }
-            }
+          // if Y is in W
+          if w.remove(y) != nil {
+            // replace Y in W by the same two sets
+            w.formUnion([intersection, difference])
+          }
+          else {
+            // if |X ∩ Y| <= |Y \ X| add X ∩ Y to W else add Y \ X to W
+            w.insert(intersection.count <= difference.count ? intersection : difference)
           }
         }
       }
