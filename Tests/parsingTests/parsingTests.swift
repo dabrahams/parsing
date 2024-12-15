@@ -27,21 +27,29 @@ struct TestNFA: NFA {
   typealias SubExpression = (start: State, end: State)
 
   /// Appends states for a regex containing no top-level "|" symbols, stopping at the first "|" or unmatched ")"
-  mutating func append(to start: State, consumingRegexTerm s: inout Substring) -> SubExpression {
-    var tail = start
+  mutating func append(to start: State, consumingRegexAlternative s: inout Substring) -> SubExpression {
+    // This epsilon transition is needed to keep the tricksy test
+    // cases working.  Otherwise an alternative path to the empty
+    // language will end up being a loop, since start == end for the
+    // NFA recognizing the empty pattern.
+    var tail = addState()
+    addEdge(from: start, to: tail, via: .epsilon)
+
     while let c = s.first {
       if "|)".contains(c) { return (start, tail) }
+        s.removeFirst()
 
       let newTail: State
       if c == "(" {
-        newTail = append(to: start, consumingRegex: &s).end
+        newTail = append(to: tail, consumingRegex: &s).end
+        precondition(s.first == ")", "missing close paren")
+        s.removeFirst()
       }
       else {
         // Single symbol
         precondition(!"?+*".contains(c), "invalid regex; unexpected quantifier")
-        s.removeFirst()
         newTail = addState()
-        addEdge(from: start, to: newTail, via: .some(c))
+        addEdge(from: tail, to: newTail, via: .some(c))
       }
       maybeQuantify((tail, newTail), consumingFirstOf: &s)
       tail = newTail
@@ -61,31 +69,13 @@ struct TestNFA: NFA {
   }
 
   mutating func append(to start: State, consumingRegex s: inout Substring) -> SubExpression {
-    guard let c = s.first else {
-      let end = addState()
-      addEdge(from: start, to: end, via: .epsilon)
-      return (start, end)
-    }
-
-    if c == ")" { return (start, start) }
-
-    // Parenthesized subexpression
-    if c == "(" {
+    let term = append(to: start, consumingRegexAlternative: &s)
+    while s.first == "|" {
       s.removeFirst()
-      let r = append(to: start, consumingRegex: &s)
-      precondition(s.popFirst() == ")", "invalid regex; missing )")
-      maybeQuantify(r, consumingFirstOf: &s)
-      return r
+      let alternative = append(to: start, consumingRegexAlternative: &s)
+      addEdge(from: alternative.end, to: term.end, via: .epsilon)
     }
-    else {
-      let term = append(to: start, consumingRegexTerm: &s)
-      while s.first == "|" {
-        s.removeFirst()
-        let alternative = append(to: start, consumingRegexTerm: &s)
-        addEdge(from: alternative.end, to: term.end, via: .epsilon)
-      }
-      return term
-    }
+    return term
   }
 
   init(_ r: String) {
@@ -97,27 +87,44 @@ struct TestNFA: NFA {
   }
 }
 
+let regularCases: [String: [(input: String, expected: Bool)]] = [
+  // Basic cases
+  "": [("", true), ("x", false), ("xy", false)],
+  "x": [("", false), ("x", true), ("xy", false)],
+  "x+": [("", false), ("x", true), ("xy", false), ("xx", true)],
+  "x*": [("", true), ("x", true), ("xy", false), ("xx", true)],
+  "x?": [("", true), ("x", true), ("xy", false), ("xx", false)],
+  "x|y": [("", false), ("x", true), ("y", true), ("xx", false)],
+
+  // Nested groups
+  "(xy)+": [("", false), ("xy", true), ("xyxy", true), ("x", false)],
+  "(x|y)*": [("", true), ("x", true), ("y", true), ("xy", true), ("yx", true), ("xyxy", true)],
+  
+  // Complex combinations
+  "x(y|z)+": [("", false), ("x", false), ("xy", true), ("xz", true), ("xyz", true), ("xyzyz", true)],
+  "(ab|cd)*": [("", true), ("ab", true), ("cd", true), ("abcd", true), ("cdab", true), ("abc", false)],
+  
+  // Multiple alternatives
+  "a|b|c": [("", false), ("a", true), ("b", true), ("c", true), ("d", false), ("ab", false)],
+  "(x|y)(a|b)": [("xa", true), ("xb", true), ("ya", true), ("yb", true), ("xx", false), ("ab", false)],
+
+  // Double nesting
+  "((x|y)z)+": [("xa", false), ("xy", false), ("xz", true), ("yz", true), ("xzx", false), ("xzyy", false), ("xzyz", true)],
+
+  // Tricksy
+  "x(|y)z": [("xyyz", false), ("xz", true), ("xyz", true), ("x", false)],
+  "x(y|)z": [("xyyz", false), ("xz", true), ("xyz", true), ("x", false)],
+]
+
 
 @Test func nfaToDfa() async throws {
 
-  do {
-    let n = TestNFA("")
+  for (pattern, expectations) in regularCases {
+    let n = TestNFA(pattern)
     let d = EquivalentDFA(n)
-    for (input, r) in [("", true), ("x", false), ("xy", false)] {
-      #expect(n.recognizes(input) == r)
-      #expect(d.recognizes(input) == r)
+    for (input, expectedMatch) in expectations {
+      #expect(n.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), nfa:\n\(n)")
+      #expect(d.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), dfa:\n\(d)")
     }
   }
-
-  do {
-    let n = TestNFA("x")
-    print(n)
-    let d = EquivalentDFA(n)
-    for (input, r) in [("", false), ("x", true), ("xy", false)] {
-      #expect(n.recognizes(input) == r)
-      #expect(d.recognizes(input) == r)
-    }
-  }
-
-    // Write your test here and use APIs like `#expect(...)` to check expected conditions.
 }

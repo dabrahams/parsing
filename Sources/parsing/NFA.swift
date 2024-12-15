@@ -25,7 +25,7 @@ extension NFA {
       var next: Configuration = []
 
       for s in current {
-        for e in outgoingEdges(s) where e.label == c {
+        for e in outgoingEdges(s) where e.label == .some(c) {
           next.insert(e.otherEnd)
         }
       }

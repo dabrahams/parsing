@@ -8,6 +8,7 @@ enum EpsilonOr<T> {
 }
 
 extension EpsilonOr: Equatable where T: Equatable {
+  /*
   static func == (me: Self, other: T) -> Bool {
     if case .some(let x) = me { return x == other }
     return false
@@ -16,7 +17,7 @@ extension EpsilonOr: Equatable where T: Equatable {
   static func == (other: T, me: Self) -> Bool {
     if case .some(let x) = me { return x == other }
     return false
-  }
+  }*/
 }
 
 extension EpsilonOr: Hashable where T: Hashable {}
