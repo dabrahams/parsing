@@ -122,9 +122,12 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
   for (pattern, expectations) in regularCases {
     let n = TestNFA(pattern)
     let d = EquivalentDFA(n)
+    let m = MinimizedDFA(d)
+    #expect(m.states.count <= d.states.count, "pattern: \(pattern)")
     for (input, expectedMatch) in expectations {
       #expect(n.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), nfa:\n\(n)")
       #expect(d.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), dfa:\n\(d)")
+      #expect(m.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), minimized dfa:\n\(m)")
     }
   }
 }

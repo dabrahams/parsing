@@ -58,3 +58,8 @@ struct EquivalentDFA<N: NFA>: DFA {
   }
 }
 
+extension EquivalentDFA: CustomStringConvertible {
+  var description: String {
+    "\(outgoingEdges)\nstart: \(start); accepting: \(states.filter(isAccepting))"
+  }
+}
