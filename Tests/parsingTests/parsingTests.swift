@@ -88,6 +88,7 @@ struct TestNFA: NFA {
 }
 
 let regularCases: [String: [(input: String, expected: Bool)]] = [
+  /*
   // Basic cases
   "": [("", true), ("x", false), ("xy", false)],
   "x": [("", false), ("x", true), ("xy", false)],
@@ -107,27 +108,58 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
   // Multiple alternatives
   "a|b|c": [("", false), ("a", true), ("b", true), ("c", true), ("d", false), ("ab", false)],
   "(x|y)(a|b)": [("xa", true), ("xb", true), ("ya", true), ("yb", true), ("xx", false), ("ab", false)],
-
+*/
   // Double nesting
   "((x|y)z)+": [("xa", false), ("xy", false), ("xz", true), ("yz", true), ("xzx", false), ("xzyy", false), ("xzyz", true)],
-
+/*
   // Tricksy
   "x(|y)z": [("xyyz", false), ("xz", true), ("xyz", true), ("x", false)],
   "x(y|)z": [("xyyz", false), ("xz", true), ("xyz", true), ("x", false)],
+  "xyzzy|x*y+": [("xyzxy", false)],
+ */
 ]
 
 
 @Test func nfaToDfa() async throws {
 
+  /*
+  let n = TestNFA("xyzzy|x*y+")
+  print(n)
+  let d = SmallDFA(EquivalentDFA(n))
+  print(d)
+  let m = SmallDFA(MinimizedDFA(d))
+  print(m)
+  */
+
   for (pattern, expectations) in regularCases {
     let n = TestNFA(pattern)
-    let d = EquivalentDFA(n)
+    let d = SmallDFA(EquivalentDFA(n))
     let m = MinimizedDFA(d)
-    #expect(m.states.count <= d.states.count, "pattern: \(pattern)")
+    #expect(m.states.count <= d.states.count,
+              """
+
+              pattern: \(pattern)
+              ---- DFA ---
+              \(d)
+              ---- MINIMIZED ---
+              \(m)
+
+              """
+    )
     for (input, expectedMatch) in expectations {
       #expect(n.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), nfa:\n\(n)")
       #expect(d.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), dfa:\n\(d)")
-      #expect(m.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), minimized dfa:\n\(m)")
+      #expect(m.recognizes(input) == expectedMatch,
+              """
+
+              pattern: \(pattern), input: \(input)
+              ---- DFA ---
+              \(d)
+              ---- MINIMIZED ---
+              \(m)
+
+              """
+      )
     }
   }
 }

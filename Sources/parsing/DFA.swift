@@ -1,4 +1,4 @@
-protocol DFA {
+protocol DFA<Symbol> {
   associatedtype Symbol: Hashable
   typealias EdgeLabel = Symbol
   associatedtype State: Hashable
