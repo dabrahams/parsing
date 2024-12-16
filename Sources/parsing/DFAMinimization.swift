@@ -4,7 +4,6 @@ extension DFA {
   ///
   /// Algorithm due to Hopcroft.
   func stateEquivalenceSets() -> Set<Set<State>> {
-    print("---------")
     var incomingEdges: [State: [EdgeLabel: [State]]] = [:]
     for s in states {
       for e in outgoingEdges(s) {
@@ -15,8 +14,6 @@ extension DFA {
       incomingEdges[s].flatMap { $0[c] } ?? []
     }
 
-    print("incoming:", incomingEdges)
-
     let q = Set(states)
     let f = q.filter { isAccepting($0) }
     // P := {F, Q \ F}
@@ -24,33 +21,24 @@ extension DFA {
     // W := {F, Q \ F}
     var w = p
 
-    print("start, W:", w)
     // while (W is not empty) do
     //     choose and remove a set A from W
     while let a = w.popFirst() {
-
-      print("popped", a)
 
       // for each c in Σ do
       let incomingLabels = Set<EdgeLabel>(
         a.lazy.flatMap { incomingEdges[$0, default: [:]].keys })
       for c in incomingLabels {
-        print("---")
-        print("c: ", c)
 
         // let X be the set of states for which a transition on c leads to a state in A
         let x: Set<State> = Set(a.lazy.flatMap { incoming(to: $0, on: c) })
-        print("x:", x)
 
         // for each set Y in P for which X ∩ Y is nonempty and Y \ X is nonempty do
         for y in p {
-          print("y:", y)
           let intersection = x.intersection(y)
           if intersection.isEmpty { continue }
           let difference = y.subtracting(x)
           if difference.isEmpty { continue }
-	  print("intersection:", intersection)
-	  print("difference:", intersection)
 
           // replace Y in P by the two sets X ∩ Y and Y \ X
           p.remove(y)
@@ -58,19 +46,16 @@ extension DFA {
 
           // if Y is in W
           if w.remove(y) != nil {
-            print("y found; replace with intersection/difference")
             // replace Y in W by the same two sets
             w.formUnion([intersection, difference])
           }
           else {
-            print("y not found; add the smaller of intersection/difference")
             // if |X ∩ Y| <= |Y \ X| add X ∩ Y to W else add Y \ X to W
             w.insert(intersection.count <= difference.count ? intersection : difference)
           }
         }
       }
     }
-    print("done:", p)
     return p
   }
 }
