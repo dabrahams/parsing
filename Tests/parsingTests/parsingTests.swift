@@ -51,21 +51,29 @@ struct TestNFA: NFA {
         newTail = addState()
         addEdge(from: tail, to: newTail, via: .some(c))
       }
-      maybeQuantify((tail, newTail), consumingFirstOf: &s)
-      tail = newTail
+      tail = maybeQuantify((tail, newTail), consumingFirstOf: &s)
     }
     return (start, tail)
   }
 
-  mutating func maybeQuantify(_ x: SubExpression, consumingFirstOf s: inout Substring) {
-    guard let q = s.first, "?*+".contains(q) else { return }
+  mutating func maybeQuantify(_ x: SubExpression, consumingFirstOf s: inout Substring) -> State {
+    guard let q = s.first, "?*+".contains(q) else { return x.end }
+    s.removeFirst()
     if "?*".contains(q) {
+      // Allow skipping forward over x
       addEdge(from: x.start, to: x.end, via: .epsilon)
     }
     if "+*".contains(q) {
+      // Allow looping back to recognize x again
       addEdge(from: x.end, to: x.start, via: .epsilon)
+      let r = addState()
+
+      // Without this forward ɛ-edge, consecutive quantifications
+      // could be hopped over backward.  turning "x*y*" into "(x|y)*".
+      addEdge(from: x.end, to: r, via: .epsilon)
+      return r
     }
-    s.removeFirst()
+    return x.end
   }
 
   mutating func append(to start: State, consumingRegex s: inout Substring) -> SubExpression {
@@ -88,7 +96,6 @@ struct TestNFA: NFA {
 }
 
 let regularCases: [String: [(input: String, expected: Bool)]] = [
-  /*
   // Basic cases
   "": [("", true), ("x", false), ("xy", false)],
   "x": [("", false), ("x", true), ("xy", false)],
@@ -108,29 +115,27 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
   // Multiple alternatives
   "a|b|c": [("", false), ("a", true), ("b", true), ("c", true), ("d", false), ("ab", false)],
   "(x|y)(a|b)": [("xa", true), ("xb", true), ("ya", true), ("yb", true), ("xx", false), ("ab", false)],
-*/
+
   // Double nesting
   "((x|y)z)+": [("xa", false), ("xy", false), ("xz", true), ("yz", true), ("xzx", false), ("xzyy", false), ("xzyz", true)],
-/*
-  // Tricksy
+
+  // Regression tests
   "x(|y)z": [("xyyz", false), ("xz", true), ("xyz", true), ("x", false)],
   "x(y|)z": [("xyyz", false), ("xz", true), ("xyz", true), ("x", false)],
-  "xyzzy|x*y+": [("xyzxy", false)],
- */
+  "xyzzyq|x*y+q": [("xyzxy", false), ("yxyq", false), ("xyzzyq", true), ("yyq", true), ("xq", false), ("q", false), ("xyq", true)],
 ]
 
 
 @Test func nfaToDfa() async throws {
 
   /*
-  let n = TestNFA("xyzzy|x*y+")
+  let n = TestNFA("xyzzyq|x*y+q")
   print(n)
   let d = SmallDFA(EquivalentDFA(n))
   print(d)
   let m = SmallDFA(MinimizedDFA(d))
   print(m)
-  */
-
+*/
   for (pattern, expectations) in regularCases {
     let n = TestNFA(pattern)
     let d = SmallDFA(EquivalentDFA(n))

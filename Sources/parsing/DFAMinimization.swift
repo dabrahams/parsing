@@ -1,8 +1,10 @@
 extension DFA {
   
-  /// Return the equivalent states for DFA minimization.
+  /// Return the sets of equivalent states for DFA minimization.
   ///
-  /// Algorithm due to Hopcroft.
+  /// - Algorithm due to Hopcroft.
+  /// - Complexity: O(ns log n), where n is the number of states and s
+  ///   is the size of the alphabet
   func stateEquivalenceSets() -> Set<Set<State>> {
     var incomingEdges: [State: [EdgeLabel: [State]]] = [:]
     for s in states {
@@ -17,7 +19,8 @@ extension DFA {
     let q = Set(states)
     let f = q.filter { isAccepting($0) }
     // P := {F, Q \ F}
-    var p: Set<Set<State>> = Set([f, q.subtracting(f)])
+    let nonAcceptingStates = q.subtracting(f)
+    var p: Set<Set<State>> = Set([f, nonAcceptingStates].lazy.filter { !$0.isEmpty })
     // W := {F, Q \ F}
     var w = p
 
