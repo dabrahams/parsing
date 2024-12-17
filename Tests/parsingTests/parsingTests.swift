@@ -133,12 +133,13 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
   print(n)
   let d = SmallDFA(EquivalentDFA(n))
   print(d)
-  let m = SmallDFA(MinimizedDFA(d))
+  let m = MinimizedDFA(d)
   print(m)
-*/
+   */
+
   for (pattern, expectations) in regularCases {
     let n = TestNFA(pattern)
-    let d = SmallDFA(EquivalentDFA(n))
+    let d = SmallDFA(EquivalentDFA(n)) // small makes it easier to read.
     let m = MinimizedDFA(d)
     #expect(m.states.count <= d.states.count,
               """
