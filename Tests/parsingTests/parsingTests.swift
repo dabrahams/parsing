@@ -111,7 +111,7 @@ extension TestNFA: CustomStringConvertible {
 
 }
 
-let regularCases: [String: [(input: String, expected: Bool)]] = [
+@Test(arguments: [
   // Basic cases
   "": [("", true), ("x", false), ("xy", false)],
   "x": [("", false), ("x", true), ("xy", false)],
@@ -123,11 +123,11 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
   // Nested groups
   "(xy)+": [("", false), ("xy", true), ("xyxy", true), ("x", false)],
   "(x|y)*": [("", true), ("x", true), ("y", true), ("xy", true), ("yx", true), ("xyxy", true)],
-  
+
   // Complex combinations
   "x(y|z)+": [("", false), ("x", false), ("xy", true), ("xz", true), ("xyz", true), ("xyzyz", true)],
   "(ab|cd)*": [("", true), ("ab", true), ("cd", true), ("abcd", true), ("cdab", true), ("abc", false)],
-  
+
   // Multiple alternatives
   "a|b|c": [("", false), ("a", true), ("b", true), ("c", true), ("d", false), ("ab", false)],
   "(x|y)(a|b)": [("xa", true), ("xb", true), ("ya", true), ("yb", true), ("xx", false), ("ab", false)],
@@ -139,30 +139,30 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
   "x(|y)z": [("xyyz", false), ("xz", true), ("xyz", true), ("x", false)],
   "x(y|)z": [("xyyz", false), ("xz", true), ("xyz", true), ("x", false)],
   "xyzzyq|x*y+q": [("xyzxy", false), ("yxyq", false), ("xyzzyq", true), ("yyq", true), ("xq", false), ("q", false), ("xyq", true)],
-]
+])
+func nfaToDfa(patternAndExpectations: (String, [(input: String, expected: Bool)])) async throws {
 
-@Test func nfaToDfa() async throws {
+  let (pattern, expectations) = patternAndExpectations
 
-  for (pattern, expectations) in regularCases {
-    let n = TestNFA(pattern)
-    let d = SmallDFA(EquivalentDFA(n)) // small makes it easier to read.
-    let m = MinimizedDFA(d)
-    #expect(m.states.count <= d.states.count,
-              """
+  let n = TestNFA(pattern)
+  let d = SmallDFA(EquivalentDFA(n)) // small makes it easier to read.
+  let m = MinimizedDFA(d)
+  #expect(m.states.count <= d.states.count,
+          """
 
-              pattern: \(pattern)
-              ---- DFA ---
-              \(d)
-              ---- MINIMIZED ---
-              \(m)
+            pattern: \(pattern)
+            ---- DFA ---
+            \(d)
+            ---- MINIMIZED ---
+            \(m)
 
-              """
-    )
-    for (input, expectedMatch) in expectations {
-      #expect(n.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), nfa:\n\(n)")
-      #expect(d.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), dfa:\n\(d)")
-      #expect(m.recognizes(input) == expectedMatch,
-              """
+            """
+  )
+  for (input, expectedMatch) in expectations {
+    #expect(n.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), nfa:\n\(n)")
+    #expect(d.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), dfa:\n\(d)")
+    #expect(m.recognizes(input) == expectedMatch,
+            """
 
               pattern: \(pattern), input: \(input)
               ---- DFA ---
@@ -171,8 +171,7 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
               \(m)
 
               """
-      )
-    }
+    )
   }
 }
 
