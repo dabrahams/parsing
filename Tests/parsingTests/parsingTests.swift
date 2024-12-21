@@ -141,27 +141,7 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
   "xyzzyq|x*y+q": [("xyzxy", false), ("yxyq", false), ("xyzzyq", true), ("yyq", true), ("xq", false), ("q", false), ("xyq", true)],
 ]
 
-
 @Test func nfaToDfa() async throws {
-
-  let n = TestNFA("(xyz|xy*)z+")
-  print(n)
-  var r = TestNFA.Recognizer(recognizing: n)
-  print(r.configuration)
-  _ = r.consume("x")
-  print(r.configuration)
-  _ = r.consume("y")
-  print(r.configuration)
-  _ = r.consume("y")
-  print(r.configuration)
-  _ = r.consume("z")
-  print(r.configuration)
-  print(r.currentAcceptingStates())
-
-  let d = SmallDFA(EquivalentDFA(n))
-  print(d)
-  let m = MinimizedDFA(d)
-  print(m)
 
   for (pattern, expectations) in regularCases {
     let n = TestNFA(pattern)
@@ -194,4 +174,27 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
       )
     }
   }
+}
+
+@Test func console() async throws {
+
+  let n = TestNFA("(xyz|xy*)z+")
+  print(n)
+  var r = TestNFA.Recognizer(recognizing: n)
+  print(r.configuration)
+  _ = r.consume("x")
+  print(r.configuration)
+  _ = r.consume("y")
+  print(r.configuration)
+  _ = r.consume("y")
+  print(r.configuration)
+  _ = r.consume("z")
+  print(r.configuration)
+  print(r.currentAcceptingStates())
+
+  let d = SmallDFA(EquivalentDFA(n))
+  print(d)
+  let m = MinimizedDFA(d)
+  print(m)
+
 }
