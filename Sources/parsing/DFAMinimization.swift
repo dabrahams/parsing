@@ -146,7 +146,7 @@ extension MinimizedDFA: CustomStringConvertible {
 
     return
       """
-      start: \(start); accepting: \(states.filter(isAccepting))
+      start: \(start); accepting: \(states.filter(isAccepting).sortedIfPossible())
       \(rows.joined(separator: "\n"))
       """
   }

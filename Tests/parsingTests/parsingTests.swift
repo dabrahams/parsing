@@ -10,6 +10,7 @@ struct TestNFA: NFA {
   var outgoing: Dictionary<State, OutgoingEdges> = [:]
   var accepting: Set<State> = []
   var stateCount = 1
+  var states: Range<Int> { 0..<stateCount }
 
   func isAccepting(_ s: State) -> Bool { accepting.contains(s) }
 
@@ -95,6 +96,21 @@ struct TestNFA: NFA {
   }
 }
 
+extension TestNFA: CustomStringConvertible {
+
+  var description: String {
+    let rows = states.map {
+      "\($0): \(outgoingEdges($0).sortedIfPossible().map { e in "\(e.label)->\(e.otherEnd)" }.joined(separator: " "))" }
+
+    return
+      """
+      start: \(start); accepting: \(states.filter(isAccepting).sortedIfPossible())
+      \(rows.joined(separator: "\n"))
+      """
+  }
+
+}
+
 let regularCases: [String: [(input: String, expected: Bool)]] = [
   // Basic cases
   "": [("", true), ("x", false), ("xy", false)],
@@ -128,14 +144,24 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
 
 @Test func nfaToDfa() async throws {
 
-  /*
-  let n = TestNFA("xyzzyq|x*y+q")
+  let n = TestNFA("(xyz|xy*)z+")
   print(n)
+  var r = TestNFA.Recognizer(recognizing: n)
+  print(r.configuration)
+  _ = r.consume("x")
+  print(r.configuration)
+  _ = r.consume("y")
+  print(r.configuration)
+  _ = r.consume("y")
+  print(r.configuration)
+  _ = r.consume("z")
+  print(r.configuration)
+  print(r.currentAcceptingStates())
+
   let d = SmallDFA(EquivalentDFA(n))
   print(d)
   let m = MinimizedDFA(d)
   print(m)
-   */
 
   for (pattern, expectations) in regularCases {
     let n = TestNFA(pattern)
