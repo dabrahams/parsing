@@ -176,6 +176,7 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
   }
 }
 
+/*
 @Test func console() async throws {
 
   let n = TestNFA("(xyz|xy*)z+")
@@ -198,3 +199,4 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
   print(m)
 
 }
+*/

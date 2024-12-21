@@ -2,6 +2,32 @@ import Testing
 @testable import parsing
 typealias R = RegularExpression<Character>
 
+struct BasicRegularExpressionTokens<S: Sequence<Character>>: Sequence, IteratorProtocol {
+  var base: S.Iterator
+
+  init(_ base: S) {
+    self.base = base.makeIterator()
+  }
+
+  mutating func next() -> RegularExpression<Character>.Token? {
+    guard let x = base.next() else { return nil }
+    switch x {
+    case "(": return .leftParenthesis
+    case ")": return .rightParenthesis
+    case "|": return .alternative
+    case "+": return .quantifier(.oneOrMore)
+    case "*": return .quantifier(.zeroOrMore)
+    case "?": return .quantifier(.optional)
+    case "\\": return base.next().map { .symbol($0) }
+    default: return .symbol(x)
+    }
+  }
+}
+
+@Test func check() {
+  #expect(R.atom("x") == R.atom("x"))
+}
+
 @Test(arguments: [
 
         (R.atom("x"), "x"),
@@ -14,6 +40,9 @@ typealias R = RegularExpression<Character>
 (R.sequence([.atom("x"), .quantified(.atom("y"), .zeroOrMore), .atom("z")]), "xy*z"),
 (R.sequence([.atom("x"), .quantified(.atom("y"), .optional), .atom("z")]), "xy?z")
       ])
-func description(_ r: R, expectedRepresentation: String) async throws {
-
+func parsingAndUnparsing(_ r: R, expectedRepresentation: String) async throws {
+  #expect("\(r)" == expectedRepresentation)
+  var t = BasicRegularExpressionTokens(expectedRepresentation)
+  let reconstructed = try RegularExpression(readingFrom: &t)
+  #expect(reconstructed == r)
 }
