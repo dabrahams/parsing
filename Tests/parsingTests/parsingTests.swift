@@ -141,28 +141,28 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
   "xyzzyq|x*y+q": [("xyzxy", false), ("yxyq", false), ("xyzzyq", true), ("yyq", true), ("xq", false), ("q", false), ("xyq", true)],
 ]
 
-@Test func nfaToDfa() async throws {
+@Test(arguments: regularCases) func nfaToDfa(pattern: String, expectations: [(input: String, expected: Bool)]) async throws {
 
-  for (pattern, expectations) in regularCases {
-    let n = TestNFA(pattern)
-    let d = SmallDFA(EquivalentDFA(n)) // small makes it easier to read.
-    let m = MinimizedDFA(d)
-    #expect(m.states.count <= d.states.count,
-              """
+  let n = TestNFA(pattern)
+  let d = SmallDFA(EquivalentDFA(n)) // small makes it easier to read.
+  let m = MinimizedDFA(d)
+  #expect(m.states.count <= d.states.count,
+          """
 
-              pattern: \(pattern)
-              ---- DFA ---
-              \(d)
-              ---- MINIMIZED ---
-              \(m)
+            pattern: \(pattern)
+            ---- DFA ---
+            \(d)
+            ---- MINIMIZED ---
+            \(m)
 
-              """
-    )
-    for (input, expectedMatch) in expectations {
-      #expect(n.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), nfa:\n\(n)")
-      #expect(d.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), dfa:\n\(d)")
-      #expect(m.recognizes(input) == expectedMatch,
-              """
+            """
+  )
+
+  for (input, expectedMatch) in expectations {
+    #expect(n.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), nfa:\n\(n)")
+    #expect(d.recognizes(input) == expectedMatch, "pattern: \(pattern), input: \(input), dfa:\n\(d)")
+    #expect(m.recognizes(input) == expectedMatch,
+            """
 
               pattern: \(pattern), input: \(input)
               ---- DFA ---
@@ -171,8 +171,7 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
               \(m)
 
               """
-      )
-    }
+    )
   }
 }
 
