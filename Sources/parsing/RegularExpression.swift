@@ -22,7 +22,8 @@ extension RegularExpression: Equatable where Symbol: Equatable {}
 extension RegularExpression: CustomStringConvertible {
 
   var description: String {
-    self.described(inSequenceOrQuantified: false)
+    if case .sequence(let x) = self, x.isEmpty { return "()" }
+    return self.described(inSequenceOrQuantified: false)
   }
 
   private func described(inSequenceOrQuantified: Bool) -> String {
@@ -44,6 +45,7 @@ extension RegularExpression: CustomStringConvertible {
 /// An iterator with one element of lookahead.
 public struct Stream<Generator: IteratorProtocol>: IteratorProtocol {
   public var peek: Generator.Element?
+
   var base: Generator
 
   public init(_ base: inout Generator) {
@@ -109,5 +111,87 @@ extension RegularExpression {
       }
     }
     self = sequence.count == 1 ? sequence[0] : .sequence(sequence)
+  }
+}
+
+extension RegularExpression.Token: Equatable where Symbol: Equatable {}
+extension RegularExpression.Token: Hashable where Symbol: Hashable {}
+
+extension RegularExpression where Symbol: Hashable {
+
+  func isNullable(nullableSymbols nulls: Set<Symbol>) -> Bool {
+    switch self {
+    case .quantified(let base, let q):
+      if q == .zeroOrMore || q == .optional { return true }
+      return base.isNullable(nullableSymbols: nulls)
+    case .alternatives(let a):
+      return a.contains { $0.isNullable(nullableSymbols: nulls) }
+    case .atom(let s):
+      return nulls.contains(s)
+    case .sequence(let s):
+      return s.allSatisfy { $0.isNullable(nullableSymbols: nulls) }
+    }
+  }
+
+  func symbols() -> Set<Symbol> {
+    switch self {
+    case .quantified(let base, _):
+      return base.symbols()
+    case .alternatives(let s),
+         .sequence(let s):
+      return Set(s.lazy.flatMap { $0.symbols() })
+    case .atom(let s):
+      return Set([s])
+    }
+  }
+
+  func map<T>(_ f: (Symbol)->T) -> RegularExpression<T> {
+    typealias R = RegularExpression<T>
+
+    switch self {
+    case .quantified(let base, let q):
+      return .quantified(base.map(f), q)
+    case .alternatives(let a):
+      return .alternatives(a.map { $0.map(f) })
+    case .atom(let s):
+      return .atom(f(s))
+    case .sequence(let s):
+      return .sequence(s.map { $0.map(f) })
+    }
+  }
+
+  static var epsilon: Self { .sequence([]) }
+}
+
+extension RegularExpression: Language {
+
+  func concatenated(to tail: Self) -> Self {
+    // Don't create a sequence for concatenating epsilon
+    if case .sequence(let x) = self, x.isEmpty { return tail }
+    if case .sequence(let x) = tail, x.isEmpty { return self }
+
+    if case .sequence(let h) = self {
+      if case .sequence(let t) = tail {
+        return .sequence(h + t)
+      }
+      return .sequence(h + CollectionOfOne(tail))
+    }
+    if case .sequence(let t) = tail {
+      return .sequence(CollectionOfOne(self) + t)
+    }
+    return .sequence([self, tail])
+  }
+
+  func union(_ other: Self) -> Self {
+    if case .alternatives(let h) = self {
+      if case .alternatives(let t) = other {
+        return .alternatives(h + t)
+      }
+      return .alternatives(h + CollectionOfOne(other))
+    }
+    if case .alternatives(let t) = other {
+      return .alternatives(CollectionOfOne(self) + t)
+    }
+    return .alternatives([self, other])
   }
 }

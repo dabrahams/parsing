@@ -2,6 +2,15 @@ import Testing
 @testable import parsing
 typealias R = RegularExpression<Character>
 
+extension R {
+
+  init(_ s: String) throws {
+    var t = BasicRegularExpressionTokens(s)
+    self = try RegularExpression(readingFrom: &t)
+  }
+
+}
+
 struct BasicRegularExpressionTokens<S: Sequence<Character>>: Sequence, IteratorProtocol {
   var base: S.Iterator
 
