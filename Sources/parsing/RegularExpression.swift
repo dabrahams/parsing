@@ -160,6 +160,7 @@ extension RegularExpression where Symbol: Hashable {
   }
 
   static var epsilon: Self { .sequence([]) }
+  static var null: Self { .alternatives([]) }
 }
 
 extension RegularExpression: Language {
@@ -167,6 +168,7 @@ extension RegularExpression: Language {
   func concatenated(to tail: Self) -> Self {
     // Don't create a sequence for concatenating epsilon
     switch (self, tail) {
+    case (.null, _), (_, .null): return .null
     case (.epsilon, let t): return t
     case (let h, .epsilon): return h
     case (.sequence(let h), .sequence(let t)):
