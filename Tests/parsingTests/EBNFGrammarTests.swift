@@ -82,7 +82,6 @@ extension EBNFGrammar where Symbol == Character {
       """)
 
   let d = g.derivatives(of: g.rules[0].rhs, by: "r")
-  dump(d)
   #expect(d == [.sequence([.atom(.plain("s"))])])
 //  print(g.basicNonterminalAtomicLanguages())
 }
@@ -104,6 +103,7 @@ extension EBNFGrammar where Symbol == Character {
   #expect(g.nullables == [])
   #expect(g.symbols == g.terminals.union(g.nonTerminals))
 
+  /*
   print(g.basicNonterminalAtomicLanguages())
   for s in g.symbols {
     for t in g.terminals {
@@ -114,7 +114,7 @@ extension EBNFGrammar where Symbol == Character {
       }
     }
   }
-
+   */
 }
 
 @Test func derivatives2() throws {

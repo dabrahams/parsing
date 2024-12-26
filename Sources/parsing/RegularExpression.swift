@@ -8,9 +8,9 @@ extension Quantifier: CustomStringConvertible {
   var description: String { String(rawValue) }
 }
 
-enum RegularExpression<Symbol> {
+enum RegularExpression<Symbol: Hashable> {
   case sequence([Self])
-  case alternatives([Self])
+  case alternatives(Set<Self>)
   indirect case quantified(Self, Quantifier)
   case atom(Symbol)
 }
@@ -33,7 +33,7 @@ extension RegularExpression: CustomStringConvertible {
     case .sequence(let s):
       return l + s.map { $0.described(inSequenceOrQuantified: true) }.joined() + r
     case .alternatives(let s):
-      return l + s.map { $0.described(inSequenceOrQuantified: false) }.joined(separator: "|") + r
+      return l + s.map { $0.described(inSequenceOrQuantified: false) }.sorted().joined(separator: "|") + r
     case .quantified(let s, let q):
       return s.described(inSequenceOrQuantified: true) + "\(q)"
     case .atom(let s):
@@ -76,12 +76,12 @@ extension RegularExpression {
   }
 
   private init <Generator: IteratorProtocol<Token>>(readingFrom input: inout Stream<Generator>) throws {
-    var alternatives = try [Self(readingAlternativeFrom: &input)]
+    var alternatives = try Set(CollectionOfOne(Self(readingAlternativeFrom: &input)))
     while case .alternative = input.peek  {
       _ = input.next()
-      try alternatives.append(Self(readingAlternativeFrom: &input))
+      try alternatives.insert(Self(readingAlternativeFrom: &input))
     }
-    self = alternatives.count == 1 ? alternatives[0] : .alternatives(alternatives)
+    self = alternatives.count == 1 ? alternatives.first! : .alternatives(alternatives)
   }
 
   private init<Generator: IteratorProtocol<Token>>(readingAlternativeFrom input: inout Stream<Generator>) throws {
@@ -137,8 +137,9 @@ extension RegularExpression where Symbol: Hashable {
     switch self {
     case .quantified(let base, _):
       return base.symbols()
-    case .alternatives(let s),
-         .sequence(let s):
+    case .alternatives(let s):
+      return Set(s.lazy.flatMap { $0.symbols() })
+    case .sequence(let s):
       return Set(s.lazy.flatMap { $0.symbols() })
     case .atom(let s):
       return Set([s])
@@ -150,7 +151,7 @@ extension RegularExpression where Symbol: Hashable {
     case .quantified(let base, let q):
       return .quantified(base.map(f), q)
     case .alternatives(let a):
-      return .alternatives(a.map { $0.map(f) })
+      return .alternatives(Set(a.map { $0.map(f) }))
     case .atom(let s):
       return .atom(f(s))
     case .sequence(let s):
@@ -181,14 +182,14 @@ extension RegularExpression: Language {
   }
 
   func union(_ other: Self) -> Self {
-    if case .alternatives(let h) = self {
-      if case .alternatives(let t) = other {
-        return .alternatives(h + t)
+    if case .alternatives(let a) = self {
+      if case .alternatives(let b) = other {
+        return .alternatives(a.union(b))
       }
-      return .alternatives(h + CollectionOfOne(other))
+      return .alternatives(a.union(CollectionOfOne(other)))
     }
-    if case .alternatives(let t) = other {
-      return .alternatives(CollectionOfOne(self) + t)
+    if case .alternatives(let b) = other {
+      return .alternatives(b.union(CollectionOfOne(self)))
     }
     return .alternatives([self, other])
   }
