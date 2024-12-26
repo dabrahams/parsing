@@ -16,7 +16,7 @@ fileprivate typealias L = AtomicLanguage<Character>
 
 @Test func basic() throws {
 
-  let l = try L(
+  var l = try L(
     base: "X", sansPrefix: "a",
     components: [
       .init(leadingBase: "Y", tail: .init("a|b")),
@@ -37,4 +37,23 @@ fileprivate typealias L = AtomicLanguage<Character>
       C(leadingBase: nil, tail: .init("(j|k|l)(d|e)*"))].sorted { "\($0.tail)" < "\($1.tail)" }
 
   #expect(c == x)
+
+  let l1 = try L(
+    base: "Y", sansPrefix: "a",
+    components:[
+      .init(leadingBase: "Y", tail: .init("m")),
+      .init(leadingBase: "W", tail: .init("n"))
+    ])
+
+  l.substitute(l1)
+
+  let c0 = l.allComponents().sorted { "\($0.tail)" < "\($1.tail)" }
+  let x0 = try [
+      C(leadingBase: "W", tail: .init("nm*(d|e)*")),
+      C(leadingBase: "Z", tail: .init("(Yc*|f)(d|e)*")),
+      C(leadingBase: nil, tail: .init("ghi(d|e)*")),
+      C(leadingBase: nil, tail: .init("(j|k|l)(d|e)*"))].sorted { "\($0.tail)" < "\($1.tail)" }
+
+  #expect(c0 == x0)
+
 }
