@@ -146,8 +146,6 @@ extension RegularExpression where Symbol: Hashable {
   }
 
   func map<T>(_ f: (Symbol)->T) -> RegularExpression<T> {
-    typealias R = RegularExpression<T>
-
     switch self {
     case .quantified(let base, let q):
       return .quantified(base.map(f), q)
@@ -194,4 +192,42 @@ extension RegularExpression: Language {
     }
     return .alternatives([self, other])
   }
+}
+
+extension Collection where Element: SetAlgebra {
+
+  func union() -> Element {
+    self.reduce(into: Element()) { $0.formUnion($1) }
+  }
+
+}
+
+extension Collection {
+
+  func leadingSymbols<S>(nullables: Set<S>) -> Set<S> where Element == RegularExpression<S> {
+    self.lazy.map { $0.leadingSymbols(nullables: nullables) }.union()
+  }
+
+}
+
+extension RegularExpression where Symbol: Hashable {
+
+  func leadingSymbols(nullables: Set<Symbol>) -> Set<Symbol> {
+    switch self {
+    case .quantified(let base, _):
+      return base.leadingSymbols(nullables: nullables)
+    case .alternatives(let a):
+      return a.leadingSymbols(nullables: nullables)
+    case .atom(let s):
+      return [s]
+    case .sequence(let s):
+      var result = Set<Symbol>()
+      for u in s {
+        result.formUnion(u.leadingSymbols(nullables: nullables))
+        if !u.isNullable(nullableSymbols: nullables) { break }
+      }
+      return result
+    }
+  }
+
 }

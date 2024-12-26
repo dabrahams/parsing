@@ -12,6 +12,8 @@ struct EBNFGrammar<Symbol: Hashable> {
   let terminals: Set<Symbol>
   let nonTerminals: Set<Symbol>
   let symbols: Set<Symbol>
+  let rulesByLHS: [Symbol: [Rule]]
+
   public private(set) var nullables: Set<Symbol> = []
 
   init(start: Symbol, rules: [Rule]) {
@@ -20,6 +22,7 @@ struct EBNFGrammar<Symbol: Hashable> {
     nonTerminals = Set(rules.lazy.map(\.lhs))
     terminals = Set(rules.lazy.flatMap { $0.rhs.symbols() } ).subtracting(nonTerminals)
     symbols = terminals.union(nonTerminals)
+    rulesByLHS = Dictionary<Symbol, [Rule]>(grouping: rules, by: \.lhs)
     findNullables()
   }
 
@@ -137,8 +140,6 @@ extension EBNFGrammar {
   }
 
   func basicNonterminalAtomicLanguages() -> [Derivative: Set<DerivativeRHS>] {
-    let rulesByLHS = Dictionary<Symbol, [Rule]>(grouping: rules, by: \.lhs)
-
     var r: [Derivative: Set<DerivativeRHS>] = [:]
     for n in nonTerminals {
       for t in terminals {
@@ -173,6 +174,18 @@ extension EBNFGrammar.DerivativeSymbol: CustomStringConvertible {
     case .derivative(let s): return "\(s)"
     case .plain(let s): return "\(s)"
     }
+  }
+
+}
+
+extension EBNFGrammar {
+
+  func leadingRHSNonterminals(_ s: Symbol) -> Set<Symbol> {
+
+    rulesByLHS[s, default: []].lazy.map {
+      $0.rhs.leadingSymbols(nullables: nullables)
+    }.union().intersection(nonTerminals)
+
   }
 
 }
