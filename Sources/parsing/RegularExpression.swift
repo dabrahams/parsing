@@ -166,32 +166,31 @@ extension RegularExpression: Language {
 
   func concatenated(to tail: Self) -> Self {
     // Don't create a sequence for concatenating epsilon
-    if case .sequence(let x) = self, x.isEmpty { return tail }
-    if case .sequence(let x) = tail, x.isEmpty { return self }
-
-    if case .sequence(let h) = self {
-      if case .sequence(let t) = tail {
-        return .sequence(h + t)
-      }
-      return .sequence(h + CollectionOfOne(tail))
+    switch (self, tail) {
+    case (.epsilon, let t): return t
+    case (let h, .epsilon): return h
+    case (.sequence(let h), .sequence(let t)):
+      return .sequence(h + t)
+    case (.sequence(let h), let t):
+      return .sequence(h + CollectionOfOne(t))
+    case (let h, .sequence(let t)):
+      return .sequence(CollectionOfOne(h) + t)
+    case (let h, let t):
+      return .sequence([h, t])
     }
-    if case .sequence(let t) = tail {
-      return .sequence(CollectionOfOne(self) + t)
-    }
-    return .sequence([self, tail])
   }
 
   func union(_ other: Self) -> Self {
-    if case .alternatives(let a) = self {
-      if case .alternatives(let b) = other {
-        return .alternatives(a.union(b))
-      }
+    switch (self, other) {
+    case (.alternatives(let a), .alternatives(let b)):
+      return .alternatives(a.union(b))
+    case (.alternatives(let a), _):
       return .alternatives(a.union(CollectionOfOne(other)))
-    }
-    if case .alternatives(let b) = other {
+    case (_, .alternatives(let b)):
       return .alternatives(b.union(CollectionOfOne(self)))
+    case (_, _):
+      return .alternatives([self, other])
     }
-    return .alternatives([self, other])
   }
 }
 
