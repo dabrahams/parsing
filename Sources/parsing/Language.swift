@@ -1,8 +1,8 @@
 import Algorithms
-infix operator ◦
-infix operator ∪
-infix operator ◦=
-infix operator ∪=
+infix operator ◦: MultiplicationPrecedence
+infix operator ∪: AdditionPrecedence
+infix operator ◦=: AssignmentPrecedence
+infix operator ∪=: AssignmentPrecedence
 
 protocol Language<Symbol> {
   associatedtype Symbol
@@ -16,7 +16,7 @@ protocol Language<Symbol> {
 
 extension Language {
   static func ◦(l: Self, r: Self) -> Self { l.concatenated(to: r) }
-  static func ∪(l: Self, r: Self) -> Self { l.concatenated(to: r) }
+  static func ∪(l: Self, r: Self) -> Self { l.union(r) }
 
   static func ◦=(l: inout Self, r: Self) { l.concatenate(r) }
   static func ∪=(l: inout Self, r: Self) { l.formUnion(r) }
@@ -29,7 +29,7 @@ extension Language {
     self = self.concatenated(to: tail)
   }
 }
-
+/*
 protocol LiftedLanguage: Language {
   associatedtype Unlifted: Language
   init(_ : Unlifted)
@@ -46,7 +46,10 @@ extension LiftedLanguage {
   }
 
   static func ◦(l: Self, r: Unlifted) -> Self { l.concatenated(to: r) }
-  static func ∪(l: Unlifted, r: Self) -> Self { Self(l).concatenated(to: r) }
+  static func ◦(l: Unlifted, r: Self) -> Self { Self(l).concatenated(to: r) }
+
+  static func ∪(l: Self, r: Unlifted) -> Self { l.union(Self(r)) }
+  static func ∪(l: Unlifted, r: Self) -> Self { Self(l).union(r) }
 
   static func ◦=(l: inout Self, r: Unlifted) { l.concatenate(r) }
   static func ∪=(l: inout Self, r: Unlifted) { l.formUnion(r) }
@@ -60,7 +63,7 @@ extension LiftedLanguage {
   }
 
 }
-
+*/
 /*
 extension Language where Self: Collection {
   static func ◦<Tail: Language<Symbol>>(l: Self, r: Tail) -> Product2Sequence<Self, Tail> {
@@ -79,7 +82,7 @@ extension Product2Sequence: Language where Element: Language {
 }
  */
 
-extension Set: Language, LiftedLanguage where Element: Language {
+extension Set: Language/*, LiftedLanguage*/ where Element: Language {
 
   typealias Unlifted = Element
   typealias Symbol = Element.Symbol
@@ -92,7 +95,8 @@ extension Set: Language, LiftedLanguage where Element: Language {
 
 }
 
-extension Optional: Language, LiftedLanguage where Wrapped: Language {
+/*
+extension Optional: Language/*, LiftedLanguage*/ where Wrapped: Language {
 
   typealias Unlifted = Wrapped
   typealias Symbol = Wrapped.Symbol
@@ -120,3 +124,4 @@ extension Optional: Language, LiftedLanguage where Wrapped: Language {
   }
 
 }
+*/
