@@ -1,3 +1,38 @@
+postfix operator *
+postfix operator +
+
+extension RegularExpression {
+
+  static postfix func*(x: Self) -> Self {
+    switch x {
+    case .null, .epsilon: return .epsilon
+    default: return .quantified(x, .zeroOrMore)
+    }
+  }
+
+  static postfix func+(x: Self) -> Self {
+    switch x {
+    case .null, .epsilon: return x
+    default: return .quantified(x, .oneOrMore)
+    }
+  }
+
+  var optionally: Self {
+    switch self {
+    case .null, .epsilon: return .epsilon
+    default: return .quantified(self, .optional)
+    }
+  }
+
+  func quantified(by q: Quantifier) -> Self {
+    switch q {
+    case .zeroOrMore: return self*
+    case .oneOrMore: return self+
+    case .optional: return self.optionally
+    }
+  }
+}
+
 enum Quantifier: Character {
   case zeroOrMore = "*"
   case oneOrMore = "+"
@@ -30,6 +65,8 @@ extension RegularExpression: CustomStringConvertible {
     let (l, r) = inSequenceOrQuantified ? ("(",")") : ("","")
 
     switch self {
+    case .epsilon: return "ɛ"
+    case .null: return "∅"
     case .sequence(let s):
       return l + s.map { $0.described(inSequenceOrQuantified: true) }.joined() + r
     case .alternatives(let s):
@@ -76,12 +113,12 @@ extension RegularExpression {
   }
 
   private init <Generator: IteratorProtocol<Token>>(readingFrom input: inout Stream<Generator>) throws {
-    var alternatives = try Set(CollectionOfOne(Self(readingAlternativeFrom: &input)))
+    var alternatives = try Self(readingAlternativeFrom: &input)
     while case .alternative = input.peek  {
       _ = input.next()
-      try alternatives.insert(Self(readingAlternativeFrom: &input))
+      try alternatives ∪= Self(readingAlternativeFrom: &input)
     }
-    self = alternatives.count == 1 ? alternatives.first! : .alternatives(alternatives)
+    self = alternatives
   }
 
   private init<Generator: IteratorProtocol<Token>>(readingAlternativeFrom input: inout Stream<Generator>) throws {
@@ -106,11 +143,11 @@ extension RegularExpression {
       }
       _ = input.next()
       if case .quantifier(let q) = input.peek {
-        sequence.append(.quantified(sequence.popLast()!, q))
+        sequence.append(sequence.popLast()!.quantified(by: q))
         _ = input.next()
       }
     }
-    self = sequence.count == 1 ? sequence[0] : .sequence(sequence)
+    self = sequence.reduce(into: .epsilon, ◦=)
   }
 }
 
@@ -184,6 +221,7 @@ extension RegularExpression: Language {
 
   func union(_ other: Self) -> Self {
     switch (self, other) {
+    case (.null, let x), (let x, .null): return x
     case (.alternatives(let a), .alternatives(let b)):
       return .alternatives(a.union(b))
     case (.alternatives(let a), _):
@@ -229,6 +267,35 @@ extension RegularExpression where Symbol: Hashable {
         if !u.isNullable(nullableSymbols: nullables) { break }
       }
       return result
+    }
+  }
+
+}
+
+extension RegularExpression: CustomDebugStringConvertible {
+
+  var debugDescription: String {
+    lispRepresentation(multiline: false)
+//    "\n" + lispRepresentation(multiline: true)
+  }
+
+  func lispRepresentation(multiline: Bool, indent: Int = 0) -> String {
+
+    let i = multiline ? String(repeatElement(" ", count: indent * 2)) : ""
+    let br = multiline ? "\n  " + i : " "
+    let close = multiline ? "\n\(i))" : ")"
+
+    switch self {
+    case .epsilon: return "ɛ"
+    case .null: return "∅"
+    case .quantified(let base, let q):
+      return "(\(q.rawValue)\(br)\(base.lispRepresentation(multiline: multiline, indent: indent + 1))\(close)"
+    case .alternatives(let a):
+      return "(|\(br)\(String(a.map {$0.lispRepresentation(multiline: multiline, indent: indent + 1)}.sorted().joined(by: br)))\(close)"
+    case .atom(let s):
+      return "\(s)"
+    case .sequence(let s):
+      return "(seq\(br)\(String(s.map {$0.lispRepresentation(multiline: multiline, indent: indent + 1)}.joined(by: " ")))\(close)"
     }
   }
 

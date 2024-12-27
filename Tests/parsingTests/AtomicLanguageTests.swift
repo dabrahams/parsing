@@ -11,7 +11,7 @@ fileprivate typealias L = AtomicLanguage<Character>
 
   let l1 = L(base: "x", sansPrefix: "y", components: [])
   let c1 = l1.allComponents()
-  #expect(c1.isEmpty)
+  #expect(c1 == [])
 }
 
 @Test func basic() throws {
@@ -33,8 +33,7 @@ fileprivate typealias L = AtomicLanguage<Character>
   let x = try [
       C(leadingBase: "Y", tail: .init("(a|b)(d|e)*")),
       C(leadingBase: "Z", tail: .init("(Yc*|f)(d|e)*")),
-      C(leadingBase: nil, tail: .init("ghi(d|e)*")),
-      C(leadingBase: nil, tail: .init("(j|k|l)(d|e)*"))].sorted { "\($0.tail)" < "\($1.tail)" }
+      C(leadingBase: nil, tail: .init("(ghi|j|k|l)(d|e)*"))].sorted { "\($0.tail)" < "\($1.tail)" }
 
   #expect(c == x)
 
@@ -51,8 +50,7 @@ fileprivate typealias L = AtomicLanguage<Character>
   let x0 = try [
       C(leadingBase: "W", tail: .init("nm*(d|e)*")),
       C(leadingBase: "Z", tail: .init("(Yc*|f)(d|e)*")),
-      C(leadingBase: nil, tail: .init("ghi(d|e)*")),
-      C(leadingBase: nil, tail: .init("(j|k|l)(d|e)*"))].sorted { "\($0.tail)" < "\($1.tail)" }
+      C(leadingBase: nil, tail: .init("(ghi|j|k|l)(d|e)*"))].sorted { "\($0.tail)" < "\($1.tail)" }
 
   #expect(c0 == x0)
 

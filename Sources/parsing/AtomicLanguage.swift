@@ -25,14 +25,14 @@ struct AtomicLanguage<Symbol: Hashable> {
   /// Component languages whose representations do not begin with
   /// atomic languages, i.e. that started out as (or have been reduced
   /// to) regular expressions over symbols.
-  var resolvedComponents: Set<ComponentTail>
+  var resolvedComponents: ComponentTail
 
   /// For each base symbol of an atomic language Σ at the head of a
   /// component of this language, the part of that component that
   /// follows Σ.
   var unresolvedComponents: [Symbol: Set<ComponentTail>]
 
-  var selfRecursiveTails: Set<ComponentTail>
+  var selfRecursiveTails: ComponentTail
 
   /// One of a set of component languages whose union represents a complete atomic language.
   struct Component: Hashable {
@@ -53,25 +53,25 @@ struct AtomicLanguage<Symbol: Hashable> {
     self.base = base
     self.strippedPrefix = strippedPrefix
     var c = Dictionary(grouping: components, by: \.leadingBase)
-    resolvedComponents = Set((c.removeValue(forKey: nil) ?? []).lazy.map(\.tail))
-    selfRecursiveTails = Set((c.removeValue(forKey: base) ?? []).lazy.map(\.tail))
+    resolvedComponents = .init(Set((c.removeValue(forKey: nil) ?? []).lazy.map(\.tail)))
+    selfRecursiveTails = .init(Set((c.removeValue(forKey: base) ?? []).lazy.map(\.tail)))
     unresolvedComponents = Dictionary(uniqueKeysWithValues: c.lazy.map { (k, v) in (k!, Set(v.lazy.map(\.tail)))} )
   }
 
   func allComponents() -> [Component] {
-    let commonTails: ComponentTail = selfRecursiveTails.isEmpty
-      ? .epsilon : .quantified(RegularExpression(selfRecursiveTails), .zeroOrMore)
+    let commonTails = selfRecursiveTails*
 
-    return resolvedComponents.map { .init(leadingBase: nil, tail: $0◦commonTails) }
+    let resolved = resolvedComponents == .null ? [] : [Component(leadingBase: nil, tail: resolvedComponents◦commonTails)]
+    return resolved
       + unresolvedComponents.map { (base, tails) in .init(leadingBase: base, tail: RegularExpression(tails)◦commonTails) }
   }
 
   mutating func add(_ c: Component) {
     switch c.leadingBase {
       case self.base:
-        selfRecursiveTails.insert(c.tail)
+        selfRecursiveTails = selfRecursiveTails.union(c.tail)
       case nil:
-        resolvedComponents.insert(c.tail)
+        resolvedComponents ∪= c.tail
       case .some(let b):
         unresolvedComponents[b, default: []].insert(c.tail)
     }
@@ -90,10 +90,36 @@ struct AtomicLanguage<Symbol: Hashable> {
 }
 
 extension RegularExpression where Symbol: Hashable {
+
   init(_ x: Set<Self>) {
-    self = x.isEmpty ? .epsilon : x.count == 1 ? x.first! : .alternatives(x)
+    self = x.count == 1 ? x.first! : x.reduce(into: .null, ∪=)
+  }
+
+}
+
+extension AtomicLanguage.Component: CustomStringConvertible {
+
+  var description: String {
+    "\((leadingBase.map {"\($0)"} ?? "ɛ", tail))"
+  }
+
+}
+/*
+import Graphs
+
+struct SubstitutionSet<Symbol: Hashable> : Hashable {
+  let lhs: Symbol
+  let rhs: Set<Symbol>
+
+  func substituting(_ other: Self) -> Self {
+    .init(lhs: lhs, rhs: rhs.union(other.rhs).subtracting([lhs, other.lhs]))
   }
 }
+
+struct Search<Symbol: Hashable>: Hashable {
+  var
+}
+ */
 
 /*
 extension AtomicLanguage {

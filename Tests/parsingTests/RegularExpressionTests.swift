@@ -37,18 +37,19 @@ struct BasicRegularExpressionTokens<S: Sequence<Character>>: Sequence, IteratorP
   #expect(R.atom("x") == R.atom("x"))
 }
 
-@Test(arguments: [
-
-        (R.atom("x"), "x"),
-(R.quantified(.atom("x"), .oneOrMore), "x+"),
-(R.sequence([.atom("x"), .atom("y")]), "xy"),
-(R.alternatives([.atom("x"), .atom("y")]), "x|y"),
-(R.quantified(R.alternatives([.atom("x"), .atom("y")]), .oneOrMore), "(x|y)+"),
-(R.sequence([.atom("x"), .atom("y"), .alternatives([.atom("z"), .atom("w")])]), "xy(w|z)"),
-(R.sequence([.atom("x"), .atom("y"), .sequence([.atom("z"), .atom("w")])]), "xy(zw)"),
-(R.sequence([.atom("x"), .quantified(.atom("y"), .zeroOrMore), .atom("z")]), "xy*z"),
-(R.sequence([.atom("x"), .quantified(.atom("y"), .optional), .atom("z")]), "xy?z")
-      ])
+@Test(
+  arguments: [
+    (R.atom("x"), "x"),
+    (R.atom("x").quantified(by: .oneOrMore), "x+"),
+    (R.atom("x")+, "x+"),
+    (R.atom("x") ◦ R.atom("y"), "xy"),
+    (R.atom("x") ∪ R.atom("y"), "x|y"),
+    ((R.atom("x") ∪ R.atom("y"))+, "(x|y)+"),
+    (R.atom("x") ◦ R.atom("y") ◦ (R.atom("z") ∪ R.atom("w")), "xy(w|z)"),
+    (R.atom("x") ◦ R.atom("y") ◦ (R.atom("z") ◦  R.atom("w")), "xyzw"),
+    (R.atom("x") ◦ R.atom("y")* ◦ R.atom("z"), "xy*z"),
+    (R.atom("x") ◦ R.atom("y").optionally ◦ R.atom("z"), "xy?z")]
+)
 func parsingAndUnparsing(_ r: R, expectedRepresentation: String) async throws {
   #expect("\(r)" == expectedRepresentation)
   var t = BasicRegularExpressionTokens(expectedRepresentation)
