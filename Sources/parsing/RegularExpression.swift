@@ -300,3 +300,11 @@ extension RegularExpression: CustomDebugStringConvertible {
   }
 
 }
+
+extension RegularExpression where Symbol: Hashable {
+
+  init(_ x: Set<Self>) {
+    self = x.count == 1 ? x.first! : x.reduce(into: .null, ∪=)
+  }
+
+}

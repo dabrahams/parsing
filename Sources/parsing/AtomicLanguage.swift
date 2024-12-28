@@ -89,14 +89,6 @@ struct AtomicLanguage<Symbol: Hashable> {
   }
 }
 
-extension RegularExpression where Symbol: Hashable {
-
-  init(_ x: Set<Self>) {
-    self = x.count == 1 ? x.first! : x.reduce(into: .null, ∪=)
-  }
-
-}
-
 extension AtomicLanguage.Component: CustomStringConvertible {
 
   var description: String {
