@@ -195,7 +195,7 @@ extension EBNFGrammar {
 
   typealias Atomic = AtomicLanguage<Symbol>
 
-  func nonterminalAtomicLanguages() -> [DerivativeID: Atomic] {
+  func rawAtomicLanguages() -> [DerivativeID: Atomic] {
     var r: [DerivativeID: Atomic] = [:]
     for s in symbols {
       for t in terminals {
@@ -208,6 +208,10 @@ extension EBNFGrammar {
     return r
   }
 
+  func reducedAtomicLanguages() -> [DerivativeID: RegularExpression<Symbol>] {
+    var l = rawAtomicLanguages()
+    return [:]
+  }
 }
 
 extension EBNFGrammar {

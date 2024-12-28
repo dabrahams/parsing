@@ -85,9 +85,6 @@ extension EBNFGrammar where Symbol == Character {
   #expect(d.byBase.count == 1)
   let x = try AtomicLanguage<Character>.Component(R("s"))
   #expect(d.byBase[nil] == x, "\(d.byBase), \(x)")
-  dump(d.byBase[nil]!.tail)
-  dump(x.tail)
-//  print(g.basicNonterminalAtomicLanguages())
 }
 
 @Test func derivatives() throws {
@@ -107,18 +104,7 @@ extension EBNFGrammar where Symbol == Character {
   #expect(g.nullables == [])
   #expect(g.symbols == g.terminals.union(g.nonTerminals))
 
-  /*
-  print(g.basicNonterminalAtomicLanguages())
-  for s in g.symbols {
-    for t in g.terminals {
-      print("=== \(G.Derivative(base: s, prefix: t)) ===")
-      let rhses: [R] = g.terminals.contains(s) ? [.atom(s)] : g.rules.filter { $0.lhs == s }.map { $0.rhs }
-      for r in rhses {
-        print(g.derivatives(of: r, by: t))
-      }
-    }
-  }
-   */
+  // for v in g.rawAtomicLanguages().values { print(v) }
 }
 
 @Test func derivatives2() throws {
@@ -134,17 +120,5 @@ extension EBNFGrammar where Symbol == Character {
   #expect(g.terminals == ["a", "b", "c"])
   #expect(g.nullables == [])
   #expect(g.symbols == g.terminals.union(g.nonTerminals))
-//  print(g.basicNonterminalAtomicLanguages())
-/*
-  for s in g.symbols {
-    for t in g.terminals {
-      print("=== \(G.Derivative(base: s, prefix: t)) ===")
-      let rhses: [R] = g.terminals.contains(s) ? [.atom(s)] : g.rules.filter { $0.lhs == s }.map { $0.rhs }
-      for r in rhses {
-        print(g.derivatives(of: r, by: t))
-      }
-    }
-    }
-
- */
+  for v in g.rawAtomicLanguages().values { print(v) }
 }

@@ -72,7 +72,6 @@ extension RegularExpression {
 extension RegularExpression: CustomStringConvertible {
 
   var description: String {
-    if case .sequence(let x) = self, x.isEmpty { return "()" }
     return self.described(inSequenceOrQuantified: false)
   }
 
@@ -162,7 +161,7 @@ extension RegularExpression {
         _ = input.next()
       }
     }
-    self = sequence.reduce(into: .epsilon, ◦=)
+    self.init(sequence)
   }
 }
 
@@ -198,6 +197,7 @@ extension RegularExpression where Symbol: Hashable {
     }
   }
 
+  /*
   func map<T>(_ f: (Symbol)->T) -> RegularExpression<T> {
     switch self {
     case .quantified(let base, let q):
@@ -210,7 +210,7 @@ extension RegularExpression where Symbol: Hashable {
       return .sequence(s.map { $0.map(f) })
     }
   }
-
+   */
   static var epsilon: Self { .sequence([]) }
   static var null: Self { .alternatives([]) }
 }

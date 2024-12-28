@@ -124,3 +124,20 @@ extension AtomicLanguage.Component: CustomStringConvertible {
   }
 
 }
+
+extension AtomicLanguage: CustomStringConvertible {
+
+  var description: String {
+    """
+      \(base)⁽\(strippedPrefix)⁾ = resolved: \(resolvedComponents), selfRecursive: \(selfRecursiveTail)
+        unresolved: \(unresolvedComponents.map { "\($0)⁽\(strippedPrefix)⁾ ◦ \($1)" }.joined(separator: ", "))
+        all: \(allComponents().map { "\($0)" }.joined(separator: ", "))
+      """
+    /*
+    """
+      \(base)⁽\(strippedPrefix)⁾ = \(allComponents().map { "\($0)" }.joined(separator: ", "))
+      """
+     */
+  }
+
+}
