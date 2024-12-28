@@ -30,7 +30,7 @@ struct AtomicLanguage<Symbol: Hashable> {
   /// For each base symbol of an atomic language Σ at the head of a
   /// component of this language, the part of that component that
   /// follows Σ.
-  var unresolvedComponents: [Symbol: Set<Tail>]
+  var unresolvedComponents: [Symbol: Tail]
 
   /// The combined tails of any self-recursive components.
   var selfRecursiveTail: Tail
@@ -56,15 +56,17 @@ struct AtomicLanguage<Symbol: Hashable> {
     var c = Dictionary(grouping: components, by: \.leadingBase)
     resolvedComponents = .init(Set((c.removeValue(forKey: nil) ?? []).lazy.map(\.tail)))
     selfRecursiveTail = .init(Set((c.removeValue(forKey: base) ?? []).lazy.map(\.tail)))
-    unresolvedComponents = Dictionary(uniqueKeysWithValues: c.lazy.map { (k, v) in (k!, Set(v.lazy.map(\.tail)))} )
+    unresolvedComponents = Dictionary(
+      uniqueKeysWithValues: c.lazy.map { (k, v) in
+        (k!, v.lazy.map(\.tail).reduce(.null, |))} )
   }
 
   func allComponents() -> [Component] {
-    let commonTails = selfRecursiveTail*
+    let commonTail = selfRecursiveTail*
 
-    let resolved = resolvedComponents == .null ? [] : [Component(leadingBase: nil, tail: resolvedComponents◦commonTails)]
+    let resolved = resolvedComponents == .null ? [] : [Component(leadingBase: nil, tail: resolvedComponents◦commonTail)]
     return resolved
-      + unresolvedComponents.map { (base, tails) in .init(leadingBase: base, tail: RegularExpression(tails)◦commonTails) }
+      + unresolvedComponents.map { (base, tail) in .init(leadingBase: base, tail: tail◦commonTail) }
   }
 
   mutating func add(_ c: Component) {
@@ -74,19 +76,17 @@ struct AtomicLanguage<Symbol: Hashable> {
       case nil:
         resolvedComponents ∪= c.tail
       case .some(let b):
-        unresolvedComponents[b, default: []].insert(c.tail)
+        unresolvedComponents[b, default: .null] |= c.tail
     }
   }
 
   mutating func substitute(_ substitution: Self) {
     precondition(base != substitution.base)
-    guard let replaced = unresolvedComponents.removeValue(forKey: substitution.base) else { return }
+    guard let replacedTail = unresolvedComponents.removeValue(forKey: substitution.base) else { return }
     for s in substitution.allComponents() {
-      for oldTail in replaced {
-        var s1 = s
-        s1.tail = s1.tail◦oldTail
-        add(s)
-      }
+      var s1 = s
+      s1.tail = s1.tail◦replacedTail
+      add(s)
     }
   }
 }

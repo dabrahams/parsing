@@ -44,6 +44,10 @@ extension RegularExpression {
     l ∪ r
   }
 
+  static func|=(l: inout Self, r: Self) {
+    l ∪= r
+  }
+
   var optionally: Self {
     switch self {
     case .null, .epsilon: return .epsilon
