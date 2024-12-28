@@ -37,6 +37,8 @@ struct AtomicLanguage<Symbol: Hashable> {
 
   /// One of a set of component languages whose union represents a complete atomic language.
   struct Component: Hashable {
+    typealias Tail = RegularExpression<Symbol>
+
     /// Either the base of a leading atomic language component having
     /// the same stripped prefix as the full atomic language, or `nil`
     /// indicating that the any leading component is a terminal
@@ -91,10 +93,34 @@ struct AtomicLanguage<Symbol: Hashable> {
   }
 }
 
+extension AtomicLanguage.Component: Language {
+
+  init(_ tail: Tail) {
+    self.leadingBase = nil
+    self.tail = tail
+  }
+
+  init(_ leadingBase: Symbol? = nil, _ tail: Tail) {
+    self.leadingBase = leadingBase
+    self.tail = tail
+  }
+
+  func union(_ other: Self) -> Self {
+    precondition(leadingBase == other.leadingBase)
+    return .init(leadingBase, tail ∪ other.tail)
+  }
+
+  func concatenated(to t: AtomicLanguage<Symbol>.Component) -> Self {
+    precondition(t.leadingBase == nil)
+    return .init(leadingBase, self.tail ◦ t.tail)
+  }
+
+}
+
 extension AtomicLanguage.Component: CustomStringConvertible {
 
   var description: String {
-    "\((leadingBase.map {"\($0)"} ?? "ɛ", tail))"
+    "\(leadingBase.map {"\($0)"} ?? "ɛ")⁽⎺⁾ ◦ \(tail)"
   }
 
 }

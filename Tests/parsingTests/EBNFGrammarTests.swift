@@ -82,7 +82,11 @@ extension EBNFGrammar where Symbol == Character {
       """)
 
   let d = g.derivatives(of: g.rules[0].rhs, by: "r")
-  #expect(d == [.sequence([.atom(.plain("s"))])])
+  #expect(d.byBase.count == 1)
+  let x = try AtomicLanguage<Character>.Component(R("s"))
+  #expect(d.byBase[nil] == x, "\(d.byBase), \(x)")
+  dump(d.byBase[nil]!.tail)
+  dump(x.tail)
 //  print(g.basicNonterminalAtomicLanguages())
 }
 

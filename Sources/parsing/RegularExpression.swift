@@ -316,10 +316,14 @@ extension RegularExpression: CustomDebugStringConvertible {
 
 }
 
-extension RegularExpression where Symbol: Hashable {
+extension RegularExpression {
 
   init(_ x: Set<Self>) {
     self = x.count == 1 ? x.first! : x.reduce(into: .null, ∪=)
+  }
+
+  init<X: Collection<Self>>(_ x: X) {
+    self = x.count == 1 ? x.first! : x.reduce(into: .epsilon, ◦=)
   }
 
 }

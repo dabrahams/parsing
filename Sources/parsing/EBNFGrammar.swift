@@ -2,6 +2,9 @@ import Algorithms
 
 struct EBNFGrammar<Symbol: Hashable> {
   struct Rule {
+    typealias RHS = RegularExpression<Symbol>
+    typealias LHS = Symbol
+
     var lhs: Symbol
     var rhs: RegularExpression<Symbol>
   }
@@ -35,8 +38,8 @@ extension EBNFGrammar {
   }
 
   enum Token {
-    case rhs(any Sequence<RegularExpression<Symbol>.Token>)
-    case lhs(Symbol)
+    case rhs(any Sequence<Rule.RHS.Token>)
+    case lhs(Rule.LHS)
     case isDefinedAs
   }
 
@@ -65,7 +68,7 @@ extension EBNFGrammar {
         throw ParseError(message: "expected is-defined-as token; got \(r)")
       }
 
-      let rhs = try RegularExpression<Symbol>(readingFrom: &r1)
+      let rhs = try Rule.RHS(readingFrom: &r1)
       rules.append(Rule(lhs: lhs, rhs: rhs))
     }
 
@@ -73,7 +76,57 @@ extension EBNFGrammar {
   }
 }
 
+struct DerivativeSet<Symbol: Hashable>: Hashable {
+  typealias Element = AtomicLanguage<Symbol>.Component
+
+  var byBase: [Symbol?: Element] = [:]
+
+  mutating func insert(_ e: Element) {
+    byBase[e.leadingBase, default: .init(e.leadingBase, .null)].tail |= e.tail
+  }
+
+  init() {}
+  init(_ e: Element) { self.insert(e) }
+
+  var isEmpty: Bool { byBase.values.allSatisfy { $0.tail == .null } }
+}
+
+extension DerivativeSet: Language {
+
+  func concatenated(to t: Self) -> Self {
+    var result = self
+    result.concatenate(t)
+    return result
+  }
+
+  mutating func concatenate(_ t: Self) {
+    if t.byBase.isEmpty {
+      self = Self()
+      return
+    }
+    precondition(t.byBase.count == 1)
+    guard let t1 = t.byBase[nil]?.tail else { fatalError("illegal concatenation") }
+    for i in byBase.indices {
+      byBase.values[i].tail ◦= t1
+    }
+  }
+
+  func union(_ other: Self) -> Self {
+    var result = self
+    result.byBase = byBase.merging(other.byBase) { l, r  in l.union(r) }
+    return result
+  }
+
+  mutating func formUnion(_ other: Self) {
+    byBase.merge(other.byBase) { l, r  in l.union(r) }
+  }
+
+}
+
 extension EBNFGrammar {
+
+  typealias Derivative = AtomicLanguage<Symbol>.Component
+  typealias DerivativeID = AtomicLanguage<Symbol>.ID
 
   mutating func findNullables() {
     while true {
@@ -89,91 +142,70 @@ extension EBNFGrammar {
     }
   }
 
-  struct Derivative: Hashable {
-    let base: Symbol
-    let prefix: Symbol
-  }
-
-  enum DerivativeSymbol: Hashable {
-    case derivative(Derivative)
-    case plain(Symbol)
-  }
-
-  typealias DerivativeRHS = RegularExpression<DerivativeSymbol>
-
-  func derivatives(of s: RegularExpression<Symbol>, by t: Symbol)
-    -> Set<DerivativeRHS>
+  func atomicLanguageComponents(_ language: DerivativeID) -> DerivativeSet<Symbol>
   {
-    func lift(_ s: RegularExpression<Symbol>) -> Set<RegularExpression<DerivativeSymbol>> {
-      Set([s.map { .plain($0) }])
+    if terminals.contains(language.base) {
+      return language.base == language.strippedPrefix
+        ? .init(Derivative(.epsilon)) : .init()
     }
 
+    var result = DerivativeSet<Symbol>()
+    for r in rulesByLHS[language.base, default: []] {
+      result.formUnion(derivatives(of: r.rhs, by: language.strippedPrefix))
+    }
+    return result
+  }
+
+  func derivatives(
+    of s: RegularExpression<Symbol>, by t: Symbol
+  ) -> DerivativeSet<Symbol> {
     switch(s) {
-    case .quantified(let base, let q):
-      let d = derivatives(of: base, by: t)
-      // “zero repeats” cases produce nothing
+    case .epsilon, .null: return .init()
+    case .quantified(let r, let q):
+      let d = derivatives(of: r, by: t)
+      // “zero repeats” cases produce null, so if there's no more than one repeat, we're done.
       if q == .optional { return d }
       else {
         if d.isEmpty { return d } // don't bother lifting base if d is empty.
-        return d◦lift(base)
+        return d ◦ DerivativeSet(Derivative(r*))
       }
 
     case .alternatives(let a):
-      return Set(a.lazy.flatMap { derivatives(of: $0, by: t) })
+      return a.reduce(into: DerivativeSet()) { $0.formUnion(derivatives(of: $1, by: t)) }
 
     case .atom(let x):
-      if terminals.contains(x) { return x == t ? [.epsilon] : []}
-      return [.atom(.derivative(.init(base: x, prefix: t)))]
+      if terminals.contains(x) {
+        return DerivativeSet(Derivative(x == t ? .epsilon : .null))
+      }
+      return DerivativeSet(Derivative(x, .epsilon))
 
     case .sequence(var s):
       guard
-        let first = s.first else { return [] }
+        let first = s.first else { return .init() }
 
       var d = derivatives(of: first, by: t)
       if d.isEmpty || s.count == 1 { return d } // optimization
       s.removeFirst()
-      let tail = RegularExpression.sequence(s)
-      d = d◦lift(tail)
+      let tail = RegularExpression(s)
+      d = d◦DerivativeSet(Derivative(tail))
       if !first.isNullable(nullableSymbols: nullables) { return d }
       return d ∪ derivatives(of: tail, by: t)
     }
   }
 
-  func basicNonterminalAtomicLanguages() -> [Derivative: Set<DerivativeRHS>] {
-    var r: [Derivative: Set<DerivativeRHS>] = [:]
-    for n in nonTerminals {
+  typealias Atomic = AtomicLanguage<Symbol>
+
+  func nonterminalAtomicLanguages() -> [DerivativeID: Atomic] {
+    var r: [DerivativeID: Atomic] = [:]
+    for s in symbols {
       for t in terminals {
-        r[Derivative(base: n, prefix: t)] = Set(rulesByLHS[n, default: []].flatMap {derivatives(of: $0.rhs, by: t) })
+        let id = DerivativeID(base: s, strippedPrefix: t)
+        r[id] = AtomicLanguage(
+          base: s, sansPrefix: t,
+          components: atomicLanguageComponents(id).byBase.values)
       }
     }
     return r
-  }
-
-}
-
-extension EBNFGrammar.Rule: CustomStringConvertible {
-
-  var description: String {
-    "\(lhs) = \(rhs)"
-  }
-
-}
-
-extension EBNFGrammar.Derivative: CustomStringConvertible {
-
-  var description: String {
-    "[\(base)]⁽\(prefix)⁾"
-  }
-
-}
-
-extension EBNFGrammar.DerivativeSymbol: CustomStringConvertible {
-
-  var description: String {
-    switch self {
-    case .derivative(let s): return "\(s)"
-    case .plain(let s): return "\(s)"
-    }
   }
 
 }
