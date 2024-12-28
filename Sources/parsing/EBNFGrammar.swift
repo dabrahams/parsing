@@ -230,7 +230,6 @@ extension EBNFGrammar {
       }
 
       visited[u] = currentTime
-      currentTime += 1
       for v in successors(u) {
         visit(v)
         l[u]!.substitute(l[v]!)
@@ -238,7 +237,7 @@ extension EBNFGrammar {
 
       if successors(u).isEmpty { return }
 
-      if loopTime[u, default: 0] > visited[u]! {
+      if loopTime[u, default: 0] >= visited[u]! {
         currentTime += 1
         visit(u)
       }
@@ -246,9 +245,14 @@ extension EBNFGrammar {
 
     for t in terminals {
       visit(.init(base: start, strippedPrefix: t))
+      currentTime += 1
+      for n in nonTerminals {
+        currentTime += 1
+        visit(.init(base: n, strippedPrefix: t))
+      }
     }
 
-    precondition(l.values.allSatisfy { $0.unresolvedComponents.isEmpty })
+    precondition(l.values.allSatisfy { $0.unresolvedComponents.isEmpty }, "\(l)")
     return l.compactMapValues {
       let c = $0.allComponents()
       precondition(c.count <= 1)
