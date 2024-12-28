@@ -209,8 +209,51 @@ extension EBNFGrammar {
   }
 
   func reducedAtomicLanguages() -> [DerivativeID: RegularExpression<Symbol>] {
+    typealias Vertex = AtomicLanguage<Symbol>.ID
+    typealias Time = Int
+
     var l = rawAtomicLanguages()
-    return [:]
+
+    let successors = { (u: Vertex) in
+      l[u]!.unresolvedComponents.keys.lazy.map { Vertex(base: $0, strippedPrefix: u.strippedPrefix )}
+    }
+
+    var visited: [Vertex: Time] = [:]
+    var loopTime: [Vertex: Time] = [:]
+
+    var currentTime = 0
+
+    func visit(_ u: Vertex) {
+      if visited[u] == currentTime {
+        if loopTime[u, default: 0] < currentTime { loopTime[u] = currentTime }
+        return
+      }
+
+      visited[u] = currentTime
+      currentTime += 1
+      for v in successors(u) {
+        visit(v)
+        l[u]!.substitute(l[v]!)
+      }
+
+      if successors(u).isEmpty { return }
+
+      if loopTime[u, default: 0] > visited[u]! {
+        currentTime += 1
+        visit(u)
+      }
+    }
+
+    for t in terminals {
+      visit(.init(base: start, strippedPrefix: t))
+    }
+
+    precondition(l.values.allSatisfy { $0.unresolvedComponents.isEmpty })
+    return l.compactMapValues {
+      let c = $0.allComponents()
+      precondition(c.count <= 1)
+      return c.first?.tail
+    }
   }
 }
 

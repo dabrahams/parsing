@@ -141,3 +141,9 @@ extension AtomicLanguage: CustomStringConvertible {
   }
 
 }
+
+extension AtomicLanguage.ID: CustomStringConvertible {
+
+  var description: String { "\(base)⁽\(strippedPrefix)⁾" }
+
+}
