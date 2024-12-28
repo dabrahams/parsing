@@ -78,6 +78,7 @@ struct AtomicLanguage<Symbol: Hashable> {
   }
 
   mutating func substitute(_ substitution: Self) {
+    precondition(base != substitution.base)
     guard let replaced = unresolvedComponents.removeValue(forKey: substitution.base) else { return }
     for s in substitution.allComponents() {
       for oldTail in replaced {
