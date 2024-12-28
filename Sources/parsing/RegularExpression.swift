@@ -1,38 +1,6 @@
 postfix operator *
 postfix operator +
 
-extension RegularExpression {
-
-  static postfix func*(x: Self) -> Self {
-    switch x {
-    case .null, .epsilon: return .epsilon
-    default: return .quantified(x, .zeroOrMore)
-    }
-  }
-
-  static postfix func+(x: Self) -> Self {
-    switch x {
-    case .null, .epsilon: return x
-    default: return .quantified(x, .oneOrMore)
-    }
-  }
-
-  var optionally: Self {
-    switch self {
-    case .null, .epsilon: return .epsilon
-    default: return .quantified(self, .optional)
-    }
-  }
-
-  func quantified(by q: Quantifier) -> Self {
-    switch q {
-    case .zeroOrMore: return self*
-    case .oneOrMore: return self+
-    case .optional: return self.optionally
-    }
-  }
-}
-
 enum Quantifier: Character {
   case zeroOrMore = "*"
   case oneOrMore = "+"
@@ -51,8 +19,51 @@ enum RegularExpression<Symbol: Hashable> {
 }
 
 extension RegularExpression: Sendable where Symbol: Sendable {}
-extension RegularExpression: Hashable where Symbol: Hashable {}
-extension RegularExpression: Equatable where Symbol: Equatable {}
+extension RegularExpression: Hashable {}
+
+/// Operators
+///
+/// Use these or combinator methods instead of using the cases directly.
+extension RegularExpression {
+
+  static postfix func*(x: Self) -> Self {
+    switch x {
+    case .null, .epsilon: return .epsilon
+    default: return .quantified(x, .zeroOrMore)
+    }
+  }
+
+  static postfix func+(x: Self) -> Self {
+    switch x {
+    case .null, .epsilon: return x
+    default: return .quantified(x, .oneOrMore)
+    }
+  }
+
+  static func|(l: Self, r: Self) -> Self {
+    l ∪ r
+  }
+
+  var optionally: Self {
+    switch self {
+    case .null, .epsilon: return .epsilon
+    default: return .quantified(self, .optional)
+    }
+  }
+
+}
+
+extension RegularExpression {
+
+  func quantified(by q: Quantifier) -> Self {
+    switch q {
+    case .zeroOrMore: return self*
+    case .oneOrMore: return self+
+    case .optional: return self.optionally
+    }
+  }
+
+}
 
 extension RegularExpression: CustomStringConvertible {
 
