@@ -20,19 +20,20 @@ struct AtomicLanguage<Symbol: Hashable> {
   /// The terminal symbol stripped from the left linear closure of `base`.
   let strippedPrefix: Symbol
 
-  typealias ComponentTail = RegularExpression<Symbol>
+  typealias Tail = RegularExpression<Symbol>
 
   /// Component languages whose representations do not begin with
   /// atomic languages, i.e. that started out as (or have been reduced
   /// to) regular expressions over symbols.
-  var resolvedComponents: ComponentTail
+  var resolvedComponents: Tail
 
   /// For each base symbol of an atomic language Σ at the head of a
   /// component of this language, the part of that component that
   /// follows Σ.
-  var unresolvedComponents: [Symbol: Set<ComponentTail>]
+  var unresolvedComponents: [Symbol: Set<Tail>]
 
-  var selfRecursiveTails: ComponentTail
+  /// The combined tails of any self-recursive components.
+  var selfRecursiveTail: Tail
 
   /// One of a set of component languages whose union represents a complete atomic language.
   struct Component: Hashable {
@@ -43,7 +44,7 @@ struct AtomicLanguage<Symbol: Hashable> {
     var leadingBase: Symbol?
 
     /// A regular expression representing the remainder of the language
-    var tail: ComponentTail
+    var tail: Tail
   }
 
   init<
@@ -54,12 +55,12 @@ struct AtomicLanguage<Symbol: Hashable> {
     self.strippedPrefix = strippedPrefix
     var c = Dictionary(grouping: components, by: \.leadingBase)
     resolvedComponents = .init(Set((c.removeValue(forKey: nil) ?? []).lazy.map(\.tail)))
-    selfRecursiveTails = .init(Set((c.removeValue(forKey: base) ?? []).lazy.map(\.tail)))
+    selfRecursiveTail = .init(Set((c.removeValue(forKey: base) ?? []).lazy.map(\.tail)))
     unresolvedComponents = Dictionary(uniqueKeysWithValues: c.lazy.map { (k, v) in (k!, Set(v.lazy.map(\.tail)))} )
   }
 
   func allComponents() -> [Component] {
-    let commonTails = selfRecursiveTails*
+    let commonTails = selfRecursiveTail*
 
     let resolved = resolvedComponents == .null ? [] : [Component(leadingBase: nil, tail: resolvedComponents◦commonTails)]
     return resolved
@@ -69,7 +70,7 @@ struct AtomicLanguage<Symbol: Hashable> {
   mutating func add(_ c: Component) {
     switch c.leadingBase {
       case self.base:
-        selfRecursiveTails = selfRecursiveTails.union(c.tail)
+        selfRecursiveTail ∪= c.tail
       case nil:
         resolvedComponents ∪= c.tail
       case .some(let b):
