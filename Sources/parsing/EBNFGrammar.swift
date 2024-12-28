@@ -223,26 +223,19 @@ extension EBNFGrammar {
     func resolve(_ u: Vertex) {
 
       var visiting: Set<Vertex> = []
-      var deepestEncounter: [Vertex: Int] = [:]
 
-      func visit(_ u: Vertex, depth: Int) {
-        deepestEncounter[u] = depth
+      func visit(_ u: Vertex) {
         if !visiting.insert(u).inserted { return }
 
-        repeat {
-          for v in successors(u) {
-            visit(v, depth: depth + 1)
-            l[u]!.substitute(l[v]!)
-          }
-          // If not completely resolved, we're in a dependency loop.
-          // Don't keep trying to resolve at every level; just where
-          // we find a back edge.
-        } while !successors(u).isEmpty && deepestEncounter[u]! > depth
+        for v in successors(u) {
+          visit(v)
+          l[u]!.substitute(l[v]!)
+        }
         visiting.remove(u)
       }
 
-      visit(u, depth: 0)
-      precondition(successors(u).isEmpty)
+      visit(u)
+      precondition(successors(u).isEmpty, "u = \(u)\n\(Array(l.values))")
     }
 
     for t in terminals {

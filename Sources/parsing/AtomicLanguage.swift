@@ -132,6 +132,7 @@ extension AtomicLanguage: CustomStringConvertible {
       \(base)⁽\(strippedPrefix)⁾ = resolved: \(resolvedComponents), selfRecursive: \(selfRecursiveTail)
         unresolved: \(unresolvedComponents.map { "\($0)⁽\(strippedPrefix)⁾ ◦ \($1)" }.joined(separator: ", "))
         all: \(allComponents().map { "\($0)" }.joined(separator: ", "))
+
       """
     /*
     """
