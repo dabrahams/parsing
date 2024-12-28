@@ -215,40 +215,39 @@ extension EBNFGrammar {
     var l = rawAtomicLanguages()
 
     let successors = { (u: Vertex) in
-      l[u]!.unresolvedComponents.keys.lazy.map { Vertex(base: $0, strippedPrefix: u.strippedPrefix )}
+      l[u]!.unresolvedComponents.keys.lazy.map {
+        Vertex(base: $0, strippedPrefix: u.strippedPrefix )
+      }
     }
 
-    var visited: [Vertex: Time] = [:]
-    var loopTime: [Vertex: Time] = [:]
+    func resolve(_ u: Vertex) {
 
-    var currentTime = 0
+      var visiting: Set<Vertex> = []
+      var deepestEncounter: [Vertex: Int] = [:]
 
-    func visit(_ u: Vertex) {
-      if visited[u] == currentTime {
-        if loopTime[u, default: 0] < currentTime { loopTime[u] = currentTime }
-        return
+      func visit(_ u: Vertex, depth: Int) {
+        deepestEncounter[u] = depth
+        if !visiting.insert(u).inserted { return }
+
+        repeat {
+          for v in successors(u) {
+            visit(v, depth: depth + 1)
+            l[u]!.substitute(l[v]!)
+          }
+          // If not completely resolved, we're in a dependency loop.
+          // Don't keep trying to resolve at every level; just where
+          // we find a back edge.
+        } while !successors(u).isEmpty && deepestEncounter[u]! > depth
+        visiting.remove(u)
       }
 
-      visited[u] = currentTime
-      for v in successors(u) {
-        visit(v)
-        l[u]!.substitute(l[v]!)
-      }
-
-      if successors(u).isEmpty { return }
-
-      if loopTime[u, default: 0] >= visited[u]! {
-        currentTime += 1
-        visit(u)
-      }
+      visit(u, depth: 0)
+      precondition(successors(u).isEmpty)
     }
 
     for t in terminals {
-      visit(.init(base: start, strippedPrefix: t))
-      currentTime += 1
       for n in nonTerminals {
-        currentTime += 1
-        visit(.init(base: n, strippedPrefix: t))
+        resolve(.init(base: n, strippedPrefix: t))
       }
     }
 

@@ -112,6 +112,21 @@ extension EBNFGrammar where Symbol == Character {
   // for v in g.rawAtomicLanguages().values { print(v) }
 }
 
+@Test func derivatives3() throws {
+  let g = try G(
+    """
+      A →Ba|Ca|a
+      B →Ab|Cb|b
+      C →Ac|Bc|c|Z
+      Z →z|X
+      X →B|x
+      """)
+
+  for (k, v) in g.reducedAtomicLanguages() { print ("\(k) = \(v)") }
+  print("----------------")
+  // for v in g.rawAtomicLanguages().values { print(v) }
+}
+
 @Test func derivatives2() throws {
   let g = try G(
     """
