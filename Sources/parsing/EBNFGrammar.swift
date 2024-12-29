@@ -220,22 +220,22 @@ extension EBNFGrammar {
       }
     }
 
+    var visiting: Set<Vertex> = []
+
     func resolve(_ u: Vertex) {
 
-      var visiting: Set<Vertex> = []
-
       func visit(_ u: Vertex) {
-        if !visiting.insert(u).inserted { return }
-
-        for v in successors(u) {
+        visiting.insert(u)
+        for v in successors(u) where !visiting.contains(v) {
           visit(v)
           l[u]!.substitute(l[v]!)
         }
         visiting.remove(u)
       }
 
-      visit(u)
-      precondition(successors(u).isEmpty, "u = \(u)\n\(Array(l.values))")
+      while !successors(u).isEmpty {
+        visit(u)
+      }
     }
 
     for t in terminals {
