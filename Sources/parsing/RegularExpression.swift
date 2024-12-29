@@ -28,15 +28,18 @@ extension RegularExpression {
 
   static postfix func*(x: Self) -> Self {
     switch x {
-    case .null, .epsilon: return .epsilon
-    default: return .quantified(x, .zeroOrMore)
+    case .null, .epsilon: .epsilon
+    case .quantified(let y, _): .quantified(y, .zeroOrMore)
+    default: .quantified(x, .zeroOrMore)
     }
   }
 
   static postfix func+(x: Self) -> Self {
     switch x {
-    case .null, .epsilon: return x
-    default: return .quantified(x, .oneOrMore)
+    case .null, .epsilon: x
+    case .quantified(_, .oneOrMore): x
+    case _ where x.isNullable(): .quantified(x, .zeroOrMore)
+    default: .quantified(x, .oneOrMore)
     }
   }
 
@@ -50,8 +53,9 @@ extension RegularExpression {
 
   var optionally: Self {
     switch self {
-    case .null, .epsilon: return .epsilon
-    default: return .quantified(self, .optional)
+    case .null, .epsilon: .epsilon
+    case _ where self.isNullable(): self
+    default: .quantified(self, .optional)
     }
   }
 
@@ -175,7 +179,7 @@ extension RegularExpression.Token: Hashable where Symbol: Hashable {}
 
 extension RegularExpression where Symbol: Hashable {
 
-  func isNullable(nullableSymbols nulls: Set<Symbol>) -> Bool {
+  func isNullable(nullableSymbols nulls: Set<Symbol> = []) -> Bool {
     switch self {
     case .quantified(let base, let q):
       if q == .zeroOrMore || q == .optional { return true }
@@ -241,6 +245,7 @@ extension RegularExpression: Language {
   func union(_ other: Self) -> Self {
     switch (self, other) {
     case (.null, let x), (let x, .null): x
+    case (.epsilon, let x) where x.isNullable(), (let x, .epsilon) where x.isNullable(): x
     case (.alternatives(let a), .alternatives(let b)):
       .alternatives(a.union(b))
     case (.alternatives(let a), _):
