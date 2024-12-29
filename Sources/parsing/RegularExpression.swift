@@ -29,7 +29,9 @@ extension RegularExpression {
   static postfix func*(x: Self) -> Self {
     switch x {
     case .null, .epsilon: .epsilon
-    case .quantified(let y, _): .quantified(y, .zeroOrMore)
+    case .quantified(let y, _): y*
+    case .sequence(let y) where y.count == 1: y.first!*
+    case .alternatives(let y) where y.count == 1: y.first!*
     default: .quantified(x, .zeroOrMore)
     }
   }
@@ -38,7 +40,9 @@ extension RegularExpression {
     switch x {
     case .null, .epsilon: x
     case .quantified(_, .oneOrMore): x
-    case _ where x.isNullable(): .quantified(x, .zeroOrMore)
+    case _ where x.isNullable(): x*
+    case .sequence(let y) where y.count == 1: y.first!+
+    case .alternatives(let y) where y.count == 1: y.first!+
     default: .quantified(x, .oneOrMore)
     }
   }
@@ -55,6 +59,8 @@ extension RegularExpression {
     switch self {
     case .null, .epsilon: .epsilon
     case _ where self.isNullable(): self
+    case .sequence(let y) where y.count == 1: y.first!.optionally
+    case .alternatives(let y) where y.count == 1: y.first!.optionally
     default: .quantified(self, .optional)
     }
   }
@@ -237,13 +243,61 @@ extension RegularExpression: Language {
       .sequence(h + CollectionOfOne(t))
     case (let h, .sequence(let t)):
       .sequence(CollectionOfOne(h) + t)
+    case (let h, .quantified(let t, .zeroOrMore)):
+      h.appendingStarred(t) ?? .sequence([self, tail])
+    case (.quantified(let h, .zeroOrMore), let t):
+      t.prependingStarred(h) ?? .sequence([self, tail])
     case (let h, let t):
       .sequence([h, t])
     }
   }
 
+  func prependingStarred(_ h: Self) -> Self? {
+    switch self {
+    case .sequence(let s):
+      if let r = s.first,
+         let r1 = r.prependingStarred(h) {
+        return .sequence([r1] + s.dropFirst())
+      }
+      return nil
+    case h*, h+: return self
+    case h.optionally: return h*
+    case h: return h+
+    case .alternatives(let a):
+      var a1 = Set<Self>()
+      for x in a {
+        guard let x1 = x.prependingStarred(h) else { return nil }
+        a1.insert(x1)
+      }
+      return .alternatives(a1)
+    default: return nil
+    }
+  }
+
+  func appendingStarred(_ t: Self) -> Self? {
+    switch self {
+    case .sequence(let s):
+      if let r = s.last,
+         let r1 = r.appendingStarred(t) {
+        return .sequence(s.dropLast() + [r1])
+      }
+      return nil
+    case t*, t+: return self
+    case t.optionally: return t*
+    case t: return t+
+    case .alternatives(let a):
+      var a1 = Set<Self>()
+      for x in a {
+        guard let x1 = x.appendingStarred(t) else { return nil }
+        a1.insert(x1)
+      }
+      return .alternatives(a1)
+    default: return nil
+    }
+  }
+
   func union(_ other: Self) -> Self {
-    switch (self, other) {
+    let r: Self = switch (self, other) {
     case (.null, let x), (let x, .null): x
     case (.epsilon, let x) where x.isNullable(), (let x, .epsilon) where x.isNullable(): x
     case (.alternatives(let a), .alternatives(let b)):
@@ -255,6 +309,15 @@ extension RegularExpression: Language {
     case (_, _):
       .alternatives([self, other])
     }
+
+    guard case .alternatives(let a) = r else { return r }
+    var a1 = a
+    for x in a {
+      if case .quantified(let x1, _) = x {
+        a1.remove(x1)
+      }
+    }
+    return .alternatives(a1)
   }
 }
 
