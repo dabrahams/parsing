@@ -21,6 +21,8 @@ struct BasicRegularExpressionTokens<S: Sequence<Character>>: Sequence, IteratorP
   mutating func next() -> RegularExpression<Character>.Token? {
     guard let x = base.next() else { return nil }
     switch x {
+    case "ɛ": return .epsilon
+    case "ø": return .null
     case "(": return .leftParenthesis
     case ")": return .rightParenthesis
     case "|": return .alternative

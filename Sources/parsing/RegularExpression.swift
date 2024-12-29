@@ -117,7 +117,7 @@ extension RegularExpression {
   }
 
   enum Token {
-    case leftParenthesis, rightParenthesis, alternative, quantifier(Quantifier), symbol(Symbol)
+    case leftParenthesis, rightParenthesis, alternative, quantifier(Quantifier), symbol(Symbol), epsilon, null
   }
 
   init<Tokens: Sequence<Token>>(readingFrom input_: inout Tokens) throws {
@@ -137,10 +137,14 @@ extension RegularExpression {
 
   private init<Generator: IteratorProtocol<Token>>(readingAlternativeFrom input: inout Stream<Generator>) throws {
     var sequence: [Self] = []
-
+    var nulled = false
     loop:
     while let c = input.peek {
       switch c {
+      case .epsilon:
+        sequence.append(.epsilon)
+      case .null:
+        nulled = true
       case .alternative, .rightParenthesis:
         break loop
       case .leftParenthesis:
@@ -161,7 +165,8 @@ extension RegularExpression {
         _ = input.next()
       }
     }
-    self.init(sequence)
+    if nulled { self = .null }
+    else { self.init(sequence) }
   }
 }
 
@@ -218,33 +223,32 @@ extension RegularExpression where Symbol: Hashable {
 extension RegularExpression: Language {
 
   func concatenated(to tail: Self) -> Self {
-    // Don't create a sequence for concatenating epsilon
     switch (self, tail) {
-    case (.null, _), (_, .null): return .null
-    case (.epsilon, let t): return t
-    case (let h, .epsilon): return h
+    case (.null, _), (_, .null): .null
+    // Don't create a sequence for concatenating epsilon
+    case (.epsilon, let x), (let x, .epsilon): x
     case (.sequence(let h), .sequence(let t)):
-      return .sequence(h + t)
+      .sequence(h + t)
     case (.sequence(let h), let t):
-      return .sequence(h + CollectionOfOne(t))
+      .sequence(h + CollectionOfOne(t))
     case (let h, .sequence(let t)):
-      return .sequence(CollectionOfOne(h) + t)
+      .sequence(CollectionOfOne(h) + t)
     case (let h, let t):
-      return .sequence([h, t])
+      .sequence([h, t])
     }
   }
 
   func union(_ other: Self) -> Self {
     switch (self, other) {
-    case (.null, let x), (let x, .null): return x
+    case (.null, let x), (let x, .null): x
     case (.alternatives(let a), .alternatives(let b)):
-      return .alternatives(a.union(b))
+      .alternatives(a.union(b))
     case (.alternatives(let a), _):
-      return .alternatives(a.union(CollectionOfOne(other)))
+      .alternatives(a.union(CollectionOfOne(other)))
     case (_, .alternatives(let b)):
-      return .alternatives(b.union(CollectionOfOne(self)))
+      .alternatives(b.union(CollectionOfOne(self)))
     case (_, _):
-      return .alternatives([self, other])
+      .alternatives([self, other])
     }
   }
 }
