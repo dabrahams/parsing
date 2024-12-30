@@ -433,7 +433,8 @@ extension RegularExpression {
   // https://courses.grainger.illinois.edu/cs374/sp2019/notes/01_nfa_to_reg.pdf
   func simplified() -> Self {
     let d = reducedDFA()
-    var g = LabeledBidirectionalMultiGraph<Self>()
+    typealias G = LabeledBidirectionalMultiGraph<Self>
+    var g = G()
     let vertex = g.insert(d, mapLabel: { .atom($0) })
     let initial = g.addVertex()
     let accept = g.addVertex()
@@ -441,7 +442,15 @@ extension RegularExpression {
     for s in d.accepting {
       g.addEdge(from: vertex[s]!, to: accept, label: .epsilon)
     }
-    for v in vertex.values { g.rip(v) }
+
+    var q = Array(vertex.values)
+    func stepsThrough(_ v: G.Vertex) -> Int {
+      g.predecessors[v]!.count * g.successors[v]!.count
+    }
+    while !q.isEmpty {
+      q.sort { a, b in stepsThrough(a) > stepsThrough(b) }
+      g.rip(q.popLast()!)
+    }
     return g.bundledLabel(from: initial, to: accept)
   }
 
