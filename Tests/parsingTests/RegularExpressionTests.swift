@@ -59,9 +59,16 @@ func parsingAndUnparsing(_ r: R, expectedRepresentation: String) async throws {
   #expect(reconstructed == r)
 }
 
-@Test func simplification() throws {
+@Test(
+  arguments: [
+    "a",
+    "a|b",
+    "(a|b)a",
+    "(a|b)a*",
+  ]
+) func simplificationBaseCase(pattern: String) throws {
   // Notes: smart regex construction is skewing these results a bit.
-  let r = try R("(a|b)a*")
+  let r = try R(pattern)
   let r1 = r.simplified()
   #expect(r == r1)
 }
