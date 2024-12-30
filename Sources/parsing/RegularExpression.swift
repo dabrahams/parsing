@@ -245,63 +245,15 @@ extension RegularExpression: Language {
       .sequence(h + CollectionOfOne(t))
     case (let h, .sequence(let t)):
       .sequence(CollectionOfOne(h) + t)
-    case (let h, .quantified(let t, .zeroOrMore)):
-      h.appendingStarred(t) ?? .sequence([self, tail])
-    case (.quantified(let h, .zeroOrMore), let t):
-      t.prependingStarred(h) ?? .sequence([self, tail])
     case (let h, let t):
       .sequence([h, t])
     }
   }
 
-  func prependingStarred(_ h: Self) -> Self? {
-    switch self {
-    case .sequence(let s):
-      if let r = s.first,
-         let r1 = r.prependingStarred(h) {
-        return .sequence([r1] + s.dropFirst())
-      }
-      return nil
-    case h*, h+: return self
-    case h.optionally: return h*
-    case h: return h+
-    case .alternatives(let a):
-      var a1 = Set<Self>()
-      for x in a {
-        guard let x1 = x.prependingStarred(h) else { return nil }
-        a1.insert(x1)
-      }
-      return .alternatives(a1)
-    default: return nil
-    }
-  }
-
-  func appendingStarred(_ t: Self) -> Self? {
-    switch self {
-    case .sequence(let s):
-      if let r = s.last,
-         let r1 = r.appendingStarred(t) {
-        return .sequence(s.dropLast() + [r1])
-      }
-      return nil
-    case t*, t+: return self
-    case t.optionally: return t*
-    case t: return t+
-    case .alternatives(let a):
-      var a1 = Set<Self>()
-      for x in a {
-        guard let x1 = x.appendingStarred(t) else { return nil }
-        a1.insert(x1)
-      }
-      return .alternatives(a1)
-    default: return nil
-    }
-  }
-
   func union(_ other: Self) -> Self {
-    let r: Self = switch (self, other) {
+    switch (self, other) {
     case (.null, let x), (let x, .null): x
-    case (.epsilon, let x) where x.isNullable(), (let x, .epsilon) where x.isNullable(): x
+    case (.epsilon, let x), (let x, .epsilon): x.optionally
     case (.alternatives(let a), .alternatives(let b)):
       .alternatives(a.union(b))
     case (.alternatives(let a), _):
@@ -311,25 +263,8 @@ extension RegularExpression: Language {
     case (_, _):
       .alternatives([self, other])
     }
-
-    guard case .alternatives(var a) = r else { return r }
-    for x in a {
-      a = a.filter { $0 == x || !$0.isSubset(of: x) }
-    }
-    return .alternatives(a)
   }
 
-  func isSubset(of s: Self) -> Bool {
-    switch (self, s) {
-    case (_, self): true
-    case (_, .alternatives(let a)):
-      a.contains { self.isSubset(of: $0) }
-    case (.quantified(let bl, _), .quantified(let br, .zeroOrMore)) where bl == br:
-      true
-    case (_, .quantified(let b, _)): self.isSubset(of: b)
-    default: false
-    }
-  }
 }
 
 extension Collection where Element: SetAlgebra {
