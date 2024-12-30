@@ -23,3 +23,5 @@ extension DFA {
   }
 
 }
+
+protocol MutableDFA<Symbol>: DFA, MutableFiniteAutomaton {}

@@ -1,4 +1,4 @@
-protocol MutableNFA: NFA {
+protocol MutableFiniteAutomaton: FiniteAutomaton {
 
   init()
 

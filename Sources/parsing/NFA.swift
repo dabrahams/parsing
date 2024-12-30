@@ -2,6 +2,8 @@ protocol NFA<Symbol>: FiniteAutomaton where EdgeLabel == EpsilonOr<Symbol>  {
   associatedtype Symbol: Hashable
 }
 
+protocol MutableNFA<Symbol>: NFA, MutableFiniteAutomaton {}
+
 struct NFARecognizer<N: NFA> {
   var language: N
 
