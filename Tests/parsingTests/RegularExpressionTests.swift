@@ -58,3 +58,10 @@ func parsingAndUnparsing(_ r: R, expectedRepresentation: String) async throws {
   let reconstructed = try RegularExpression(readingFrom: &t)
   #expect(reconstructed == r)
 }
+
+@Test func simplification() throws {
+  // Notes: smart regex construction is skewing these results a bit.
+  let r = try R("(a|b)a*")
+  let r1 = r.simplified()
+  #expect(r == r1)
+}

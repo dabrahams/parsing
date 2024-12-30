@@ -466,24 +466,27 @@ extension RegularExpression {
   }
 }
 
-extension LabeledBidirectionalGraph {
+extension LabeledBidirectionalMultiGraph {
+
+  func bundledLabel<Symbol>(from s: Vertex, to t: Vertex) -> EdgeLabel
+    where EdgeLabel == RegularExpression<Symbol>
+  {
+    labels[.init(source: s, target: t), default: []].reduce(.null, |)
+  }
 
   // https://courses.grainger.illinois.edu/cs374/sp2019/notes/01_nfa_to_reg.pdf
   mutating func rip<Symbol>(_ v: Vertex)
     where EdgeLabel == RegularExpression<Symbol>
   {
-    let selfEdge = label[Edge(source: v, target: v)]
+    // Depends on .null* being .epsilon
+    let center = bundledLabel(from: v, to: v)*
 
-    for (p, s) in product(predecessors[v]!, successors[v]!) {
-      let first = label[Edge(source: p, target: v)]!
-      let last = label[Edge(source: v, target: s)]!
-      let collapsed = selfEdge.map {first ◦ $0* ◦ last } ?? first ◦ last
-      if successors[p]!.contains(s) {
-        label[Edge(source: p, target: s)]! |= collapsed
-      }
-      else {
-        addEdge(from: p, to: s, label: collapsed)
-      }
+    for (p, s) in product(predecessors[v]!, successors[v]!) where s != v && p != v {
+      let first = bundledLabel(from: p, to: v)
+      let last = bundledLabel(from: v, to: s)
+      // depends on x ◦ .epsilon being x
+      let shortcut = first ◦ center ◦ last
+      addEdge(from: p, to: s, label: shortcut)
     }
     remove(v)
   }
@@ -493,9 +496,9 @@ extension LabeledBidirectionalGraph {
 extension RegularExpression {
 
   // https://courses.grainger.illinois.edu/cs374/sp2019/notes/01_nfa_to_reg.pdf
-  func simplified() -> Self? {
+  func simplified() -> Self {
     let d = reducedDFA()
-    var g = LabeledBidirectionalGraph<Self>()
+    var g = LabeledBidirectionalMultiGraph<Self>()
     let vertex = g.insert(d, mapLabel: { .atom($0) })
     let initial = g.addVertex()
     let accept = g.addVertex()
@@ -504,7 +507,7 @@ extension RegularExpression {
       g.addEdge(from: vertex[s]!, to: accept, label: .epsilon)
     }
     for v in vertex.values { g.rip(v) }
-    return g.label[.init(source: initial, target: accept)]!
+    return g.bundledLabel(from: initial, to: accept)
   }
 
 }
