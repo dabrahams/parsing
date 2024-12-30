@@ -1,12 +1,5 @@
-protocol NFA {
+protocol NFA<Symbol>: FiniteAutomaton where EdgeLabel == EpsilonOr<Symbol>  {
   associatedtype Symbol: Hashable
-  typealias EdgeLabel = EpsilonOr<Symbol>
-  associatedtype State: Hashable
-  associatedtype OutgoingEdges: Collection where OutgoingEdges.Element == LabeledAdjacencyEdge<EdgeLabel, State>
-
-  var start: State { get }
-  func isAccepting(_ s: State) -> Bool
-  func outgoingEdges(_ s: State) -> OutgoingEdges
 }
 
 struct NFARecognizer<N: NFA> {
