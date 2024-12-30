@@ -86,8 +86,8 @@ extension EBNFGrammar where Symbol == Character {
   let x = try AtomicLanguage<Character>.Component(R("s"))
   #expect(d.byBase[nil] == x, "\(d.byBase), \(x)")
 
-  for (k, v) in g.reducedAtomicLanguages() { print ("\(k) = \(v)") }
-  print("----------------")
+//  for (k, v) in g.reducedAtomicLanguages() { print ("\(k) = \(v)") }
+//  print("----------------")
 }
 
 @Test func derivatives() throws {
@@ -107,8 +107,8 @@ extension EBNFGrammar where Symbol == Character {
   #expect(g.nullables == [])
   #expect(g.symbols == g.terminals.union(g.nonTerminals))
 
-  for (k, v) in g.reducedAtomicLanguages() { print ("\(k) = \(v)") }
-  print("----------------")
+//  for (k, v) in g.reducedAtomicLanguages() { print ("\(k) = \(v)") }
+//  print("----------------")
   // for v in g.rawAtomicLanguages().values { print(v) }
 }
 
@@ -122,8 +122,9 @@ extension EBNFGrammar where Symbol == Character {
       X →B|x
       """)
 
-  for (k, v) in g.reducedAtomicLanguages() { print ("\(k) = \(v)") }
-  print("----------------")
+  let _ = g
+//  for (k, v) in g.reducedAtomicLanguages() { print ("\(k) = \(v)") }
+//  print("----------------")
   // for v in g.rawAtomicLanguages().values { print(v) }
 }
 
@@ -141,6 +142,6 @@ extension EBNFGrammar where Symbol == Character {
   #expect(g.nullables == [])
   #expect(g.symbols == g.terminals.union(g.nonTerminals))
 
-  for (k, v) in g.reducedAtomicLanguages() { print ("\(k) = \(v)") }
-  print("----------------")
+//  for (k, v) in g.reducedAtomicLanguages() { print ("\(k) = \(v)") }
+//  print("----------------")
 }
