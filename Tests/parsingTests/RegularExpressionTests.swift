@@ -66,11 +66,25 @@ func parsingAndUnparsing(_ r: R, expectedRepresentation: String) async throws {
     "(a|b)a",
     "(a|b)a*",
     "a*",
-    "a+"
-  ]
-) func simplificationBaseCase(pattern: String) throws {
-  // Notes: smart regex construction is skewing these results a bit.
+    "a+",
+    "a?",
+    "(a|b)+",
+  ])
+func unsimplifiable(pattern: String) throws {
   let r = try R(pattern)
   let r1 = r.simplified()
   #expect(r == r1)
+}
+
+@Test(
+  arguments: [
+    ("(a|b)((a|b)*c)", "(a|b)+c"),
+    ("(a|b)|(a|b)", "a|b"),
+//    ("(ab)*|(ab)*a*", "(ab)*a*"),
+    ("((a|b)a*|a)*", "(a|b)*"),
+  ])
+func unsimplifiable(pattern: String, expectedSimplification: String) throws {
+  let (p, x) = try (R(pattern), R(expectedSimplification))
+  let p1 = p.simplified()
+  #expect(p1 == x)
 }
