@@ -65,6 +65,8 @@ func parsingAndUnparsing(_ r: R, expectedRepresentation: String) async throws {
     "a|b",
     "(a|b)a",
     "(a|b)a*",
+    "a*",
+    "a+"
   ]
 ) func simplificationBaseCase(pattern: String) throws {
   // Notes: smart regex construction is skewing these results a bit.

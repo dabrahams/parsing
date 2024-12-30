@@ -239,6 +239,9 @@ extension RegularExpression: Language {
     case (.null, _), (_, .null): .null
     // Don't create a sequence for concatenating epsilon
     case (.epsilon, let x), (let x, .epsilon): x
+    case (.quantified(let x, .zeroOrMore), let y) where x == y,
+         (let y, .quantified(let x, .zeroOrMore)) where x == y:
+      .quantified(y, .oneOrMore)
     case (.sequence(let h), .sequence(let t)):
       .sequence(h + t)
     case (.sequence(let h), let t):
