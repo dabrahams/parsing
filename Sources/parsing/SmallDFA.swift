@@ -39,15 +39,3 @@ struct SmallDFA<Symbol: Hashable>: DFA {
     graph[s][label]
   }
 }
-
-extension SmallDFA: CustomStringConvertible {
-  var description: String {
-    let rows = zip(states, graph).map {  (n, edges) in
-      "\(n): \(edges.sortedIfPossible().map { e in "\(e.key)->\(e.value)" }.joined(separator: " "))" }
-
-    return """
-      start: \(start); accepting: \(accepting.sorted())
-      \(rows.joined(separator: "\n"))
-    """
-  }
-}

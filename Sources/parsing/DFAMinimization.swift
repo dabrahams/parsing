@@ -137,18 +137,3 @@ extension Collection {
     return Array(self)
   }
 }
-
-extension MinimizedDFA: CustomStringConvertible {
-
-  var description: String {
-    let rows = states.sortedIfPossible().map {
-      "\($0): \(outgoingEdges($0).sortedIfPossible().map { e in "\(e.label)->\(e.otherEnd)" }.joined(separator: " "))" }
-
-    return
-      """
-      start: \(start); accepting: \(states.filter(isAccepting).sortedIfPossible())
-      \(rows.joined(separator: "\n"))
-      """
-  }
-
-}

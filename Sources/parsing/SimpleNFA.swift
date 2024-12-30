@@ -25,19 +25,3 @@ struct SimpleNFA<Symbol: Hashable>: MutableNFA {
   mutating func setAccepting(_ s: State) { accepting.insert(s) }
 
 }
-
-
-extension SimpleNFA: CustomStringConvertible {
-
-  var description: String {
-    let rows = states.map {
-      "\($0): \(outgoingEdges($0).sortedIfPossible().map { e in "\(e.label)->\(e.otherEnd)" }.joined(separator: " "))" }
-
-    return
-      """
-      start: \(start); accepting: \(states.filter(isAccepting).sortedIfPossible())
-      \(rows.joined(separator: "\n"))
-      """
-  }
-
-}
