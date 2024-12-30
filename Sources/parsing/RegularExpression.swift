@@ -1,3 +1,5 @@
+import Algorithms
+
 postfix operator *
 postfix operator +
 
@@ -310,14 +312,23 @@ extension RegularExpression: Language {
       .alternatives([self, other])
     }
 
-    guard case .alternatives(let a) = r else { return r }
-    var a1 = a
+    guard case .alternatives(var a) = r else { return r }
     for x in a {
-      if case .quantified(let x1, _) = x {
-        a1.remove(x1)
-      }
+      a = a.filter { $0 == x || !$0.isSubset(of: x) }
     }
-    return .alternatives(a1)
+    return .alternatives(a)
+  }
+
+  func isSubset(of s: Self) -> Bool {
+    switch (self, s) {
+    case (_, self): true
+    case (_, .alternatives(let a)):
+      a.contains { self.isSubset(of: $0) }
+    case (.quantified(let bl, _), .quantified(let br, .zeroOrMore)) where bl == br:
+      true
+    case (_, .quantified(let b, _)): self.isSubset(of: b)
+    default: false
+    }
   }
 }
 
@@ -396,6 +407,104 @@ extension RegularExpression {
 
   init<X: Collection<Self>>(_ x: X) {
     self = x.count == 1 ? x.first! : x.reduce(into: .epsilon, ◦=)
+  }
+
+}
+
+extension RegularExpression {
+
+  func nfa() -> SimpleNFA<Symbol> {
+    var m = SimpleNFA<Symbol>()
+    let end = self.build(into: &m, at: m.start)
+    m.accepting.insert(end)
+    return m
+  }
+
+  func dfa() -> SmallDFA<Symbol> {
+    SmallDFA(EquivalentDFA<SimpleNFA<Symbol>>(nfa()))
+  }
+
+  func reducedDFA() -> SmallDFA<Symbol> {
+    SmallDFA(MinimizedDFA(dfa()))
+  }
+
+  func build<Machine: MutableNFA>(into machine: inout Machine, at start: Machine.State) -> Machine.State
+    where Machine.Symbol == Symbol
+  {
+    let end = machine.addState()
+    switch self {
+    case .atom(let x): machine.addEdge(from: start, to: end, via: .some(x))
+
+    case .alternatives(let a):
+      for x in a {
+        let s = machine.addState()
+        machine.addEdge(from: start, to: s, via: .epsilon)
+        let e = x.build(into: &machine, at: s)
+        machine.addEdge(from: e, to: end, via: .epsilon)
+      }
+
+    case .sequence(let a):
+      var s = start
+      for x in a {
+        s = x.build(into: &machine, at: s)
+      }
+      machine.addEdge(from: s, to: end, via: .epsilon)
+
+    case .quantified(let x, let q):
+      let e = x.build(into: &machine, at: start)
+      machine.addEdge(from: e, to: end, via: .epsilon)
+
+      if q != .oneOrMore {
+        machine.addEdge(from: start, to: e, via: .epsilon)
+      }
+      if q != .optional {
+        machine.addEdge(from: e, to: start, via: .epsilon)
+      }
+    }
+
+    return end
+  }
+}
+
+extension LabeledBidirectionalGraph {
+
+  // https://courses.grainger.illinois.edu/cs374/sp2019/notes/01_nfa_to_reg.pdf
+  mutating func rip<Symbol>(_ v: Vertex)
+    where EdgeLabel == RegularExpression<Symbol>
+  {
+    let selfEdge = label[Edge(source: v, target: v)]
+
+    for (p, s) in product(predecessors[v]!, successors[v]!) {
+      let first = label[Edge(source: p, target: v)]!
+      let last = label[Edge(source: v, target: s)]!
+      let collapsed = selfEdge.map {first ◦ $0* ◦ last } ?? first ◦ last
+      if successors[p]!.contains(s) {
+        label[Edge(source: p, target: s)]! |= collapsed
+      }
+      else {
+        addEdge(from: p, to: s, label: collapsed)
+      }
+    }
+    remove(v)
+  }
+
+}
+
+extension RegularExpression {
+
+  // https://courses.grainger.illinois.edu/cs374/sp2019/notes/01_nfa_to_reg.pdf
+  func simplified() -> Self? {
+    let d = reducedDFA()
+    var g = LabeledBidirectionalGraph<Self>()
+    let vertex = g.insert(d, mapLabel: { .atom($0) })
+    let initial = g.addVertex()
+    let accept = g.addVertex()
+    g.addEdge(from: initial, to: vertex[d.start]!, label: .epsilon)
+    for s in d.accepting {
+      g.addEdge(from: vertex[s]!, to: accept, label: .epsilon)
+    }
+    for v in vertex.values { g.rip(v) }
+    return g.label[.init(source: initial, target: accept)]!
   }
 
 }
