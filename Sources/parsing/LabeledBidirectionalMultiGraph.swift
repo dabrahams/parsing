@@ -89,3 +89,12 @@ extension LabeledBidirectionalMultiGraph {
   }
 
 }
+
+extension LabeledBidirectionalMultiGraph: CustomStringConvertible {
+
+  var description: String {
+    vertices.sortedIfPossible().map {
+      "\($0): \(outgoingEdges($0).sortedIfPossible().map { e in "\(e.label)->\(e.endpoints.target)" }.joined(separator: " "))" }.joined(separator: "\n")
+  }
+
+}
