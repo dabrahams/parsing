@@ -184,10 +184,9 @@ extension RegularExpression {
   }
 }
 
-extension RegularExpression.Token: Equatable where Symbol: Equatable {}
-extension RegularExpression.Token: Hashable where Symbol: Hashable {}
+extension RegularExpression.Token: Hashable {}
 
-extension RegularExpression where Symbol: Hashable {
+extension RegularExpression {
 
   func isNullable(nullableSymbols nulls: Set<Symbol> = []) -> Bool {
     switch self {
@@ -288,7 +287,7 @@ extension Collection {
 
 }
 
-extension RegularExpression where Symbol: Hashable {
+extension RegularExpression {
 
   func leadingSymbols(nullables: Set<Symbol>) -> Set<Symbol> {
     switch self {
