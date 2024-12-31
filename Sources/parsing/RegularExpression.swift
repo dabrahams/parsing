@@ -450,7 +450,7 @@ extension RegularExpression {
 
     var q = Array(vertex.values)
     func stepsThrough(_ v: G.Vertex) -> Int {
-      g.predecessors[v]!.count * g.successors[v]!.count
+      g.predecessors[v]!.subtracting([v]).count * g.successors[v]!.subtracting([v]).count
     }
     while !q.isEmpty {
       q.sort { a, b in stepsThrough(a) > stepsThrough(b) }
