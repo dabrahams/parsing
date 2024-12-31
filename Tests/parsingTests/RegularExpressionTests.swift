@@ -71,6 +71,8 @@ func parsingAndUnparsing(_ r: R, expectedRepresentation: String) async throws {
     "(a|b)+",
     "((a|ba)a*)?", // should simplify to b?a+
     "((a|b)a*)?", // should simplify to b?a*
+    "b?a+",
+    "b?a*"
   ])
 func unsimplifiable(pattern: String) throws {
   let r = try R(pattern)
@@ -83,9 +85,7 @@ func unsimplifiable(pattern: String) throws {
     ("(a|b)((a|b)*c)", "(a|b)+c"),
     ("(a|b)|(a|b)", "a|b"),
     ("(ab)*|(ab)*a*", "(ab)*a*"),
-    ("((a|b)a*|a)*", "(a|b)*"),
-    ("b?a+", "(a|ba)a*"), // should be unsimplifiable
-    ("b?a*", "((a|b)a*)?") // should be unsimplifiable
+    ("((a|b)a*|a)*", "(a|b)*")
   ])
 func unsimplifiable(pattern: String, expectedSimplification: String) throws {
   let (p, x) = try (R(pattern), R(expectedSimplification))

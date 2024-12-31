@@ -454,13 +454,11 @@ extension RegularExpression {
   }
 
   func simplified() -> Self {
-    let originalString = self.description
+    let selfText = self.description
     // This could be a lot better but it's a start.  It's
-    // nondeterministic across runs due to hash randomization
+    // nondeterministic across runs due to hash randomization.
     let candidate = Self(minimizedDFA())
-    return candidate
-//    return candidate.description.count < originalString.count
-//      ? candidate : originalString
+    return candidate.description.count < selfText.count ? candidate : self
   }
 
 }
