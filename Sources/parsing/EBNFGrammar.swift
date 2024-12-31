@@ -248,7 +248,7 @@ extension EBNFGrammar {
     return l.compactMapValues {
       let c = $0.allComponents()
       precondition(c.count <= 1)
-      return c.first?.tail
+      return c.first?.tail.simplified()
     }
   }
 }
