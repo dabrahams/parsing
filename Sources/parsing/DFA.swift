@@ -31,6 +31,10 @@ extension DFA {
   }
 
   func isEquivalent<D: DFA<Symbol>>(to d: D) -> Bool {
+    self.minimized().isStructurallyEquivalent(to: d.minimized())
+  }
+
+  func isStructurallyEquivalent<D: DFA<Symbol>>(to d: D) -> Bool {
     if states.count != d.states.count { return false }
 
     var dState: [State: D.State] = [start: d.start]

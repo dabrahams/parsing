@@ -47,12 +47,14 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
   let n = try SimpleNFA(parsing: pattern)
   let e = EquivalentDFA(n)
   let d = SmallDFA(e) // small makes it easier to read.
-  #expect(d == d)
-  #expect(e.isEquivalent(to: d))
-  #expect(e == e)
-  #expect(!d.isEquivalent(to: try R("QQQQ").dfa()))
+  #expect(d.isStructurallyEquivalent(to: d))
+  #expect(e.isStructurallyEquivalent(to: d))
+  #expect(e.isStructurallyEquivalent(to: e))
+  #expect(!d.isStructurallyEquivalent(to: try R("QQQQ").dfa()))
 
   let m = MinimizedDFA(d)
+  #expect(m.isEquivalent(to: d))
+
   #expect(m.states.count <= d.states.count,
           """
 
