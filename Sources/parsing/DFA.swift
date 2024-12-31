@@ -66,3 +66,24 @@ extension DFA {
 
 protocol MutableDFA<Symbol>: DFA, MutableFiniteAutomaton {}
 
+extension DFA where EdgeLabel: Comparable {
+
+  func hash(into h: inout Hasher) {
+    self.minimized().hashMinimized(into: &h)
+  }
+
+  fileprivate func hashMinimized(into h: inout Hasher) {
+    var visited: Set<State> = []
+    var q: [State] = [start]
+    while let s = q.popLast() {
+      if !visited.insert(s).inserted { continue }
+      if isAccepting(s) { true.hash(into: &h) }
+
+      for e in outgoingEdges(s).sorted(by: { $0.label < $1.label }) {
+        e.label.hash(into: &h)
+        q.append(e.otherEnd)
+      }
+    }
+  }
+
+}
