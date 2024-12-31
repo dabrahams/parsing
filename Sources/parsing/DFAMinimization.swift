@@ -64,6 +64,7 @@ extension DFA {
 }
 
 struct MinimizedDFA<Source: DFA>: DFA {
+
   typealias Symbol = Source.Symbol
   typealias State = Source.State
   typealias EdgeLabel = Symbol
