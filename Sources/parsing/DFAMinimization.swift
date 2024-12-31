@@ -103,3 +103,13 @@ struct MinimizedDFA<Source: DFA>: DFA {
   }
 
 }
+
+extension DFA {
+
+  func minimized() -> SmallDFA<Symbol> {
+
+    SmallDFA(MinimizedDFA(self))
+
+  }
+
+}
