@@ -75,6 +75,46 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
     )
   }
 }
+/*
+@Test func regression1() throws {
+  let n = try SimpleNFA(parsing: "(ab)*|(ab)*a*")
+  print(n)
+  print("--------")
+  let d = SmallDFA(EquivalentDFA(n))
+  print(d)
+  print("--------")
+  let m = MinimizedDFA(d)
+  print(m)
+  print("--------")
+
+  typealias G = LabeledBidirectionalMultiGraph<R>
+    var g = G()
+    let vertex = g.insert(m, mapLabel: { .atom($0) })
+    let initial = g.addVertex()
+    let accept = g.addVertex()
+    g.addEdge(from: initial, to: vertex[m.start]!, label: .epsilon)
+    for s in m.states where m.isAccepting(s) {
+      g.addEdge(from: vertex[s]!, to: accept, label: .epsilon)
+    }
+    print("# start: \(initial), end \(accept)")
+    print(g)
+
+    var q = Array(vertex.values)
+    func stepsThrough(_ v: G.Vertex) -> Int {
+      g.predecessors[v]!.subtracting([v]).count * g.successors[v]!.subtracting([v]).count
+    }
+    while !q.isEmpty {
+      print("# ranking")
+      q.sort { a, b in stepsThrough(a) > stepsThrough(b) }
+      print(q)
+      print(q.map(stepsThrough))
+      print("# ripping \(q.last!)")
+      g.rip(q.popLast()!)
+      print(g)
+    }
+    print("##", g.bundledLabel(from: initial, to: accept))
+}
+  */
 
 /*
 @Test func console() async throws {
