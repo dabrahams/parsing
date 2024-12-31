@@ -117,6 +117,9 @@ extension AtomicLanguage.Component: Language {
 
 }
 
+typealias AtomicLanguageSet<Symbol: Hashable>
+  = [AtomicLanguage<Symbol>.ID: RegularExpression<Symbol>]
+
 extension AtomicLanguage.Component: CustomStringConvertible {
 
   var description: String {

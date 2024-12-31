@@ -27,7 +27,7 @@ struct BasicRegularExpressionTokens<S: Sequence<Character>>: Sequence, IteratorP
     case ")": return .rightParenthesis
     case "|": return .alternative
     case "+": return .quantifier(.oneOrMore)
-    case "*": return .quantifier(.zeroOrMore)
+    case "*", "∗", "⋆": return .quantifier(.zeroOrMore)
     case "?": return .quantifier(.optional)
     case "\\": return base.next().map { .symbol($0) }
     default: return .symbol(x)

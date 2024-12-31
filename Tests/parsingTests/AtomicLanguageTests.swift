@@ -56,41 +56,67 @@ fileprivate typealias L = AtomicLanguage<Character>
 
 }
 
+fileprivate typealias LSet = AtomicLanguageSet<Character>
+
+extension LSet {
+
+  func expectEquivalence(to x: Self) {
+    #expect(Set(self.keys) == Set(x.keys))
+    for (k, v) in self {
+      if let v1 = x[k] {
+        #expect(v.isFunctionallyEquivalent(to: v1), "\(v)")
+      }
+    }
+  }
+
+}
+
 @Test func herman1() throws {
-  let g = try G(
+  try G(
     """
       S → ○
       S → S○
       S → S◁S▷
-      """)
-  let ll = g.reducedAtomicLanguages()
-
-  let x = try [
-    AtomicLanguage<Character>.ID(base: "S", strippedPrefix: "○"): R("(○|◁S▷)*"),
-    .init(base: "◁", strippedPrefix: "◁"): .epsilon,
-    .init(base: "○", strippedPrefix: "○"): .epsilon,
-    .init(base: "▷", strippedPrefix: "▷"): .epsilon]
-
-  #expect(ll == x)
+      """).reducedAtomicLanguages()
+    .expectEquivalence(
+      to: [
+        .init(base: "S", strippedPrefix: "○"): R("(○|◁S▷)*"),
+        .init(base: "◁", strippedPrefix: "◁"): .epsilon,
+        .init(base: "○", strippedPrefix: "○"): .epsilon,
+        .init(base: "▷", strippedPrefix: "▷"): .epsilon])
 }
 
-/* REVISIT: is the paper wrong?
 @Test func herman2() throws {
-  let g = try G(
+  try G(
     """
       S → ○
       S → S○
       S → S◁S▷
       S → ɛ
-      """)
-  let ll = g.reducedAtomicLanguages()
-
-  let x = try [
-    AtomicLanguage<Character>.ID(base: "S", strippedPrefix: "○"): R("(○|◁S▷|◁▷)*"),
-    .init(base: "◁", strippedPrefix: "◁"): .epsilon,
-    .init(base: "○", strippedPrefix: "○"): .epsilon,
-    .init(base: "▷", strippedPrefix: "▷"): .epsilon]
-
-  #expect(ll == x)
+      """).reducedAtomicLanguages()
+    .expectEquivalence(
+      to: [
+        .init(base: "S", strippedPrefix: "○"): R("(○|◁S?▷)*"),
+        // The paper doesn't mention this component explicitly
+        .init(base: "S", strippedPrefix: "◁"): R("S?▷(◁S?▷|○)*"),
+        .init(base: "◁", strippedPrefix: "◁"): .epsilon,
+        .init(base: "○", strippedPrefix: "○"): .epsilon,
+        .init(base: "▷", strippedPrefix: "▷"): .epsilon])
 }
-*/
+
+@Test func hendriksERule() throws {
+  try G(
+    """
+      S → ()
+      S → a
+      S → Sa
+      S → SbSc
+      """).reducedAtomicLanguages()
+    .expectEquivalence(
+      to: [
+        .init(base: "S", strippedPrefix: "a"): R("(a|bc|bSc)∗"),
+        .init(base: "S", strippedPrefix: "b"): R("(c|Sc)(a|bc|bSc)∗"),
+        .init(base: "a", strippedPrefix: "a"): .epsilon,
+        .init(base: "b", strippedPrefix: "b"): .epsilon,
+        .init(base: "c", strippedPrefix: "c"): .epsilon])
+}

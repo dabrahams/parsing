@@ -187,7 +187,7 @@ extension EBNFGrammar {
       if d.isEmpty || s.count == 1 { return d } // optimization
       s.removeFirst()
       let tail = RegularExpression(s)
-      d = d◦DerivativeSet(Derivative(tail))
+      d = d◦DerivativeSet(Derivative(tail.nulling(nullables: nullables)))
       if !first.isNullable(nullableSymbols: nullables) { return d }
       return d ∪ derivatives(of: tail, by: t)
     }
@@ -208,7 +208,7 @@ extension EBNFGrammar {
     return r
   }
 
-  func reducedAtomicLanguages() -> [DerivativeID: RegularExpression<Symbol>] {
+  func reducedAtomicLanguages() -> AtomicLanguageSet<Symbol> {
     typealias Vertex = AtomicLanguage<Symbol>.ID
     typealias Time = Int
 

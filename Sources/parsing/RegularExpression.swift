@@ -307,6 +307,21 @@ extension RegularExpression {
     }
   }
 
+  func nulling(nullables n: Set<Symbol>) -> Self {
+    switch self {
+    case .quantified(let base, let q):
+      .quantified(base.nulling(nullables: n), q)
+    case .alternatives(let a):
+      a.lazy.map { $0.nulling(nullables: n) }.reduce(into: .null, |=)
+    case .atom(let s):
+      n.contains(s) ? self.optionally : self
+    case .sequence(let s):
+      s.first?.nulling(nullables: n)
+        .concatenated(to: .sequence(Array(s[1...])).nulling(nullables: n))
+        ?? self
+    }
+  }
+
 }
 
 extension RegularExpression {
@@ -464,8 +479,9 @@ extension RegularExpression {
 
 extension RegularExpression {
 
-  func isFunctionallyEquivalent(to other: Self) -> Bool {
-    self.minimizedDFA().isStructurallyEquivalent(to: other.minimizedDFA())
+  func isFunctionallyEquivalent(to r: Self) -> Bool {
+    self.minimizedDFA() == r.minimizedDFA()
   }
 
 }
+
