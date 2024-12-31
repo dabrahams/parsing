@@ -1,4 +1,5 @@
 protocol FiniteAutomaton<EdgeLabel>: CustomStringConvertible {
+
   associatedtype EdgeLabel: Equatable
   associatedtype State: Hashable
   associatedtype OutgoingEdges: Collection<LabeledAdjacencyEdge<EdgeLabel, State>>
@@ -9,6 +10,7 @@ protocol FiniteAutomaton<EdgeLabel>: CustomStringConvertible {
 
   func isAccepting(_ s: State) -> Bool
   func outgoingEdges(_ s: State) -> OutgoingEdges
+
 }
 
 extension FiniteAutomaton {
