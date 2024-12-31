@@ -310,12 +310,7 @@ extension RegularExpression where Symbol: Hashable {
 
 }
 
-extension RegularExpression: CustomDebugStringConvertible {
-
-  var debugDescription: String {
-    lispRepresentation(multiline: false)
-//    "\n" + lispRepresentation(multiline: true)
-  }
+extension RegularExpression {
 
   func lispRepresentation(multiline: Bool, indent: Int = 0) -> String {
 
