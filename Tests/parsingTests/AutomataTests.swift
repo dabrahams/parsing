@@ -75,9 +75,10 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
     )
   }
 }
+
 /*
 @Test func regression1() throws {
-  let n = try SimpleNFA(parsing: "(ab)*|(ab)*a*")
+  let n = try SimpleNFA(parsing: "((a|ba)a*)?")
   print(n)
   print("--------")
   let d = SmallDFA(EquivalentDFA(n))
@@ -114,9 +115,7 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
     }
     print("##", g.bundledLabel(from: initial, to: accept))
 }
-  */
 
-/*
 @Test func console() async throws {
 
   let n = SimpleNFA("(xyz|xy*)z+")
