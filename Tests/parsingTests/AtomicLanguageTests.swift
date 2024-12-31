@@ -55,3 +55,42 @@ fileprivate typealias L = AtomicLanguage<Character>
   #expect(c0 == x0)
 
 }
+
+@Test func herman1() throws {
+  let g = try G(
+    """
+      S → ○
+      S → S○
+      S → S◁S▷
+      """)
+  let ll = g.reducedAtomicLanguages()
+
+  let x = try [
+    AtomicLanguage<Character>.ID(base: "S", strippedPrefix: "○"): R("(○|◁S▷)*"),
+    .init(base: "◁", strippedPrefix: "◁"): .epsilon,
+    .init(base: "○", strippedPrefix: "○"): .epsilon,
+    .init(base: "▷", strippedPrefix: "▷"): .epsilon]
+
+  #expect(ll == x)
+}
+
+/* REVISIT: is the paper wrong?
+@Test func herman2() throws {
+  let g = try G(
+    """
+      S → ○
+      S → S○
+      S → S◁S▷
+      S → ɛ
+      """)
+  let ll = g.reducedAtomicLanguages()
+
+  let x = try [
+    AtomicLanguage<Character>.ID(base: "S", strippedPrefix: "○"): R("(○|◁S▷|◁▷)*"),
+    .init(base: "◁", strippedPrefix: "◁"): .epsilon,
+    .init(base: "○", strippedPrefix: "○"): .epsilon,
+    .init(base: "▷", strippedPrefix: "▷"): .epsilon]
+
+  #expect(ll == x)
+}
+*/
