@@ -1,5 +1,22 @@
-protocol NFA<Symbol>: FiniteAutomaton where EdgeLabel == EpsilonOr<Symbol>  {
+protocol NFA<Symbol>: FiniteAutomaton, Equatable where EdgeLabel == EpsilonOr<Symbol>  {
   associatedtype Symbol: Hashable
+
+}
+
+extension NFA {
+
+  func equivalentDFA() -> SmallDFA<Symbol> {
+    SmallDFA(EquivalentDFA(self))
+  }
+
+  static func == (l: Self, r: Self) -> Bool {
+    l.isEquivalent(to: r)
+  }
+
+  func isEquivalent<Other: NFA<Symbol>>(to other: Other) -> Bool {
+    self.equivalentDFA() == other.equivalentDFA()
+  }
+
 }
 
 protocol MutableNFA<Symbol>: NFA, MutableFiniteAutomaton {}
