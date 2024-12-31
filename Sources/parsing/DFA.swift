@@ -1,4 +1,4 @@
-protocol DFA<Symbol>: FiniteAutomaton where EdgeLabel == Symbol {
+protocol DFA<Symbol>: Equatable, FiniteAutomaton where EdgeLabel == Symbol {
   associatedtype Symbol: Hashable
   func successor(of s: State, via label: EdgeLabel) -> Optional<State>
 }
@@ -24,4 +24,41 @@ extension DFA {
 
 }
 
+extension DFA {
+
+  static func == (l: Self, r: Self) -> Bool {
+    l.isEquivalent(to: r)
+  }
+
+  func isEquivalent<D: DFA<Symbol>>(to d: D) -> Bool {
+    if states.count != d.states.count { return false }
+
+    var dState: [State: D.State] = [start: d.start]
+    var q = [start]
+
+    while let v = q.popLast() {
+      let vd = dState[v]!
+      if isAccepting(v) != d.isAccepting(vd) { return false }
+      let outEdges = outgoingEdges(v)
+      if outEdges.count != d.outgoingEdges(vd).count { return false }
+
+      for e in outEdges {
+        let t = e.otherEnd
+        let sd = d.successor(of: vd, via: e.label)
+        if sd == nil { return false }
+        if let td = dState[t] {
+          if td != sd { return false }
+        }
+        else {
+          dState[t] = sd
+          q.append(t)
+        }
+      }
+    }
+    return true
+  }
+
+}
+
 protocol MutableDFA<Symbol>: DFA, MutableFiniteAutomaton {}
+

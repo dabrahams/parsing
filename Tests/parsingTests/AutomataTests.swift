@@ -45,7 +45,13 @@ let regularCases: [String: [(input: String, expected: Bool)]] = [
 @Test(arguments: regularCases) func nfaToDfa(pattern: String, expectations: [(input: String, expected: Bool)]) async throws {
 
   let n = try SimpleNFA(parsing: pattern)
-  let d = SmallDFA(EquivalentDFA(n)) // small makes it easier to read.
+  let e = EquivalentDFA(n)
+  let d = SmallDFA(e) // small makes it easier to read.
+  #expect(d == d)
+  #expect(e.isEquivalent(to: d))
+  #expect(e == e)
+  #expect(!d.isEquivalent(to: try R("QQQQ").dfa()))
+
   let m = MinimizedDFA(d)
   #expect(m.states.count <= d.states.count,
           """
