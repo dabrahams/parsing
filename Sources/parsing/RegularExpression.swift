@@ -359,7 +359,7 @@ extension RegularExpression {
     SmallDFA(EquivalentDFA<SimpleNFA<Symbol>>(nfa()))
   }
 
-  func reducedDFA() -> SmallDFA<Symbol> {
+  func minimizedDFA() -> SmallDFA<Symbol> {
     SmallDFA(MinimizedDFA(dfa()))
   }
 
@@ -431,15 +431,14 @@ extension LabeledBidirectionalMultiGraph {
 extension RegularExpression {
 
   // https://courses.grainger.illinois.edu/cs374/sp2019/notes/01_nfa_to_reg.pdf
-  func simplified() -> Self {
-    let d = reducedDFA()
+  init<D: DFA<Symbol>>(_ d: D) {
     typealias G = LabeledBidirectionalMultiGraph<Self>
     var g = G()
     let vertex = g.insert(d, mapLabel: { .atom($0) })
     let initial = g.addVertex()
     let accept = g.addVertex()
     g.addEdge(from: initial, to: vertex[d.start]!, label: .epsilon)
-    for s in d.accepting {
+    for s in d.states where d.isAccepting(s) {
       g.addEdge(from: vertex[s]!, to: accept, label: .epsilon)
     }
 
@@ -451,7 +450,25 @@ extension RegularExpression {
       q.sort { a, b in stepsThrough(a) > stepsThrough(b) }
       g.rip(q.popLast()!)
     }
-    return g.bundledLabel(from: initial, to: accept)
+    self = g.bundledLabel(from: initial, to: accept)
+  }
+
+  func simplified() -> Self {
+    let originalString = self.description
+    // This could be a lot better but it's a start.  It's
+    // nondeterministic across runs due to hash randomization
+    let candidate = Self(minimizedDFA())
+    return candidate
+//    return candidate.description.count < originalString.count
+//      ? candidate : originalString
+  }
+
+}
+
+extension RegularExpression {
+
+  func isFunctionallyEquivalent(to other: Self) -> Bool {
+    self.minimizedDFA().isStructurallyEquivalent(to: other.minimizedDFA())
   }
 
 }
