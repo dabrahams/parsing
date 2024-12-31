@@ -63,6 +63,8 @@ extension RegularExpression {
     case _ where self.isNullable(): self
     case .sequence(let y) where y.count == 1: y.first!.optionally
     case .alternatives(let y) where y.count == 1: y.first!.optionally
+    case .quantified(let y, let q):
+      .quantified(y, q == .optional ? q : .zeroOrMore)
     default: .quantified(self, .optional)
     }
   }

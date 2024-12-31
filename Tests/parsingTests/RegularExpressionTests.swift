@@ -80,7 +80,7 @@ func unsimplifiable(pattern: String) throws {
   arguments: [
     ("(a|b)((a|b)*c)", "(a|b)+c"),
     ("(a|b)|(a|b)", "a|b"),
-//    ("(ab)*|(ab)*a*", "(ab)*a*"),
+    ("(ab)*|(ab)*a*", "(ab)*a*"),
     ("((a|b)a*|a)*", "(a|b)*"),
   ])
 func unsimplifiable(pattern: String, expectedSimplification: String) throws {
