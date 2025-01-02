@@ -1,3 +1,8 @@
+/// A bidirectional graph with labels on the edges.
+///
+/// Used in regular expression reduction; for that purpose it doesn't
+/// need to be a multigraph because we can aggressively union the
+/// labels on parallel edges.
 struct LabeledBidirectionalMultiGraph<EdgeLabel: Hashable> {
   typealias Vertex = Int
 
