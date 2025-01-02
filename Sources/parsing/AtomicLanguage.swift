@@ -123,7 +123,7 @@ typealias AtomicLanguageSet<Symbol: Hashable>
 extension AtomicLanguage.Component: CustomStringConvertible {
 
   var description: String {
-    "\(leadingBase.map {"\($0)"} ?? "ɛ")⁽⎺⁾ ◦ \(tail)"
+    "\(leadingBase.map {"\($0)"} ?? "ɛ")⁽⎺⁾ ◦ \(tail.simplified())"
   }
 
 }
@@ -132,7 +132,7 @@ extension AtomicLanguage: CustomStringConvertible {
 
   var description: String {
     """
-      \(base)⁽\(strippedPrefix)⁾ = resolved: \(resolvedComponents), selfRecursive: \(selfRecursiveTail)
+      \(base)⁽\(strippedPrefix)⁾ = resolved: \(resolvedComponents), selfRecursive: \(selfRecursiveTail.simplified())
         unresolved: \(unresolvedComponents.map { "\($0)⁽\(strippedPrefix)⁾ ◦ \($1)" }.joined(separator: ", "))
         all: \(allComponents().map { "\($0)" }.joined(separator: ", "))
 
