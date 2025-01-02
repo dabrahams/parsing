@@ -77,7 +77,7 @@ extension LSet {
       S → ○
       S → S○
       S → S◁S▷
-      """).reducedAtomicLanguages()
+      """).atomicLanguages()
     .expectEquivalence(
       to: [
         .init(base: "S", strippedPrefix: "○"): R("(○|◁S▷)*"),
@@ -93,7 +93,7 @@ extension LSet {
       S → S○
       S → S◁S▷
       S → ɛ
-      """).reducedAtomicLanguages()
+      """).atomicLanguages()
     .expectEquivalence(
       to: [
         .init(base: "S", strippedPrefix: "○"): R("(○|◁S?▷)*"),
@@ -111,7 +111,7 @@ extension LSet {
       S → a
       S → Sa
       S → SbSc
-      """).reducedAtomicLanguages()
+      """).atomicLanguages()
     .expectEquivalence(
       to: [
         .init(base: "S", strippedPrefix: "a"): R("(a|bc|bSc)∗"),

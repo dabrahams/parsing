@@ -208,7 +208,7 @@ extension EBNFGrammar {
     return r
   }
 
-  func reducedAtomicLanguages() -> AtomicLanguageSet<Symbol> {
+  func atomicLanguages() -> AtomicLanguageSet<Symbol> {
     typealias Vertex = AtomicLanguage<Symbol>.ID
     typealias Time = Int
 
