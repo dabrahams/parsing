@@ -1,41 +1,25 @@
-struct SmallDFA<Symbol: Hashable>: DFA {
+import Collections
+
+struct SmallDFA<Symbol: Hashable>: MutableSmallIntStateDFA {
+
   typealias EdgeLabel = Symbol
-  typealias State = Int
-  typealias OutgoingEdges = LazyMapCollection<[Symbol: Int], LabeledAdjacencyEdge<Symbol, Int>>
   typealias States = Range<Int>
 
-  let graph: [[Symbol: Int]]
-  let start: Int
-  let accepting: Set<Int>
+  var graph: [[Symbol: Int]] = [[:]]
+  var accepting: BitSet = []
+  var start: Int = 0
   var states: Range<Int> { 0..<graph.count }
 
+  /// An instance with a single start state 0 and no accepting states.
+  init() {}
+
+  /// An instance isomorphic to source.
   init<Source: DFA<Symbol>>(_ source: Source) {
-    var g: [[Symbol: Int]] = []
-    var inverse: [Source.State: Int] = [:]
-
-    for s in source.states {
-      let n = g.count
-      g.append([:])
-      inverse[s] = n
-    }
-
-    for s in source.states {
-      let n = inverse[s]!
-      for e in source.outgoingEdges(s) {
-        g[n][e.label] = inverse[e.otherEnd]
-      }
-    }
-    graph = g
-    start = inverse[source.start]!
-    self.accepting = Set(source.states.lazy.filter { source.isAccepting($0) }.map { inverse[$0]! })
+    graph = []
+    let localState = insertGraph(source, mapLabel: { $0 })
+    start = localState[source.start]!
+    self.accepting = BitSet(
+      source.states.lazy.filter { source.isAccepting($0) }.map { localState[$0]! })
   }
 
-  func isAccepting(_ s: State) -> Bool { accepting.contains(s) }
-  func outgoingEdges(_ s: State) -> OutgoingEdges {
-    graph[s].lazy.map { (k, v) in .init(label: k, v) }
-  }
-
-  func successor(of s: State, via label: EdgeLabel) -> Optional<State> {
-    graph[s][label]
-  }
 }

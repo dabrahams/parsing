@@ -87,3 +87,20 @@ extension DFA where EdgeLabel: Comparable {
   }
 
 }
+
+extension DFA {
+
+  func reachableStates(from s: State) -> Set<State> {
+    var visited: Set<State> = []
+    var q: [State] = [s]
+    while let s = q.popLast() {
+      if !visited.insert(s).inserted { continue }
+
+      for e in outgoingEdges(s) {
+        q.append(e.otherEnd)
+      }
+    }
+    return visited
+  }
+
+}
