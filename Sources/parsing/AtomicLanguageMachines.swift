@@ -26,6 +26,8 @@ struct AtomicLanguageMachines<Symbol: Hashable> {
     var accepting: Set<Int>
   }
 
+  let mergedDFA: SmallDFA<MergedDFAEdgeLabel>
+
   subscript(_ l: LanguageID) -> Language {
     _read {
       yield languages[l]!
@@ -46,6 +48,10 @@ struct AtomicLanguageMachines<Symbol: Hashable> {
     }
 
     let m = mergedGraph.minimized()
+    mergedDFA = m
+    let baseGraph = m.graph.map {
+      Dictionary(uniqueKeysWithValues: $0.lazy.compactMap { (k, v) in k.normal.map { ($0, v)} })
+    }
 
     self.languages = .init(
       uniqueKeysWithValues: m.outgoingEdges(m.start).map {
@@ -55,13 +61,38 @@ struct AtomicLanguageMachines<Symbol: Hashable> {
           Language(
             start: $0.otherEnd,
             states: states,
-            graph: m.graph.map {
-              Dictionary(uniqueKeysWithValues: $0.lazy.map { (k, v) in (k.normal!, v) })
-            },
+            graph: baseGraph,
             accepting: Set(m.accepting.filter { states.contains($0) }))
         )
-      }
-    )
+      })
   }
 
+}
+
+extension AtomicLanguageMachines: CustomStringConvertible {
+
+  var description: String {
+
+    let states = mergedDFA.states.map { s in
+      return s == mergedDFA.start ? ""
+        : (mergedDFA.isAccepting(s) ? "  \(s) [shape=doublecircle];\n" : "")
+        + mergedDFA.outgoingEdges(s).map {
+          "  \(s) -> \($0.otherEnd) [label=\"\($0.label.normal!)\"];\n"
+        }.joined()
+    }.joined()
+
+    return """
+
+      digraph "Atomic Languages" {
+        node [shape=circle]; edge [len=1.5];
+
+      \(
+        languages.map {
+          id, l in
+          "  \"\(id)\" [shape=none]; \"\(id)\" -> \(l.start);\n"
+        }.joined()
+      )
+      \(states)}
+      """
+  }
 }
