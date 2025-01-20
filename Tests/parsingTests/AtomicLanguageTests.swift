@@ -1,6 +1,8 @@
 import Testing
 @testable import parsing
 
+infix operator =>
+
 fileprivate typealias L = AtomicLanguage<Character>
 
 @Test func terminal()  {
@@ -71,6 +73,28 @@ extension LSet {
 
 }
 
+func =>(lhs: String, rhs: [RegularExpression<String>]) -> EBNFGrammar<String>.Rule {
+  .init(lhs: "«\(lhs)»", rhs: rhs.reduce(into: .epsilon, ◦=))
+}
+
+func =>(lhs: String, rhs: [String]) -> EBNFGrammar<String>.Rule {
+  .init(lhs: "«\(lhs)»", rhs: rhs.reduce(into: .epsilon) { $0 ◦= $1^ })
+}
+
+func =>(lhs: String, rhs: RegularExpression<String>) -> EBNFGrammar<String>.Rule {
+  lhs => [rhs]
+}
+
+func =>(lhs: String, rhs: String) -> EBNFGrammar<String>.Rule {
+  lhs => rhs.split(separator: " ").map(String.init)
+}
+
+postfix operator ^
+
+postfix func ^ (_ s: String) -> RegularExpression<String> {
+  .atom(s.starts(with: "'") ? s : "«\(s)»")
+}
+
 @Test func herman1() throws {
   try G(
     """
@@ -84,6 +108,49 @@ extension LSet {
         .init(base: "◁", strippedPrefix: "◁"): .epsilon,
         .init(base: "○", strippedPrefix: "○"): .epsilon,
         .init(base: "▷", strippedPrefix: "▷"): .epsilon])
+
+  try print(AtomicLanguageMachines(G(
+    """
+    S → ()
+    S → a
+    S → Sa
+    S → SbSc
+    """).atomicLanguages()))
+
+
+  let g = EBNFGrammar<String>(
+    start: "«program»",
+    rules: [
+      "program" => ("statement"^)+,
+
+      "statement" => "'if' paren_expr statement",
+      "statement" => "'if' paren_expr statement 'else' statement",
+      "statement" => "'while' paren_expr statement",
+      "statement" => "'do' statement 'while' paren_expr ';'",
+      "statement" => ["'{'"^, ("statement"^)*,  "'}'"^],
+      "statement" => "expr ';'",
+      "statement" => "';'",
+
+      "paren_expr" => "'(' expr ')'",
+
+      "expr" => "test",
+      "expr" => "id '=' expr",
+      "test" => "sum",
+      "test" => "sum '<' sum",
+
+      "sum" => "term",
+      "sum" => "sum '+' term",
+      "sum" => "sum '-' term",
+
+      "term" => "id",
+      "term" => "integer",
+      "term" => "paren_expr",
+
+      "id" => "STRING",
+      "integer" => "'INT'",
+    ])
+
+  print(AtomicLanguageMachines(g.atomicLanguages()))
 }
 
 @Test func herman2() throws {
